@@ -47,8 +47,23 @@ php -S localhost:8080 -t public public/router.php
 Acceso inicial: usuario `admin`, contraseña `Diana.2026*` — **cámbiela de
 inmediato** en Usuarios → editar.
 
-En producción apunte el docroot a `public/` (o suba el contenido de `public/` al
-docroot y `app/`, `config/`, `database/` a un nivel NO público).
+## Despliegue en Apache
+
+Requiere `mod_rewrite` y `AllowOverride All` (o al menos `FileInfo Options`) en
+el directorio. Hay dos formas:
+
+1. **Docroot propio (recomendado):** apunte el DocumentRoot / la raíz del
+   subdominio a `public/`. `app/`, `config/` y `database/` quedan fuera del
+   alcance web.
+2. **Subcarpeta del docroot (hosting compartido):** suba la carpeta completa,
+   ej. `public_html/diana/`. El `.htaccess` raíz reenvía todo a `public/` y los
+   `.htaccess` de `app/`, `config/` y `database/` niegan el acceso directo.
+   En `config/config.php` ponga `app.url` = `https://dominio.com/diana`.
+
+Si al abrir `/auth/login` Apache responde su propio *Not Found* ("The requested
+URL was not found on this server"), la reescritura no está activa: revise que
+`mod_rewrite` esté cargado y que el VirtualHost permita `.htaccess`
+(`AllowOverride All`).
 
 ## Arquitectura
 
