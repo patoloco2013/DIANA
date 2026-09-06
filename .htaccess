@@ -1,0 +1,11 @@
+# DIANA — raíz del proyecto.
+# Permite instalar la carpeta completa en cualquier subdirectorio del docroot
+# (ej. https://dominio.com/diana/) sin cambiar el DocumentRoot de Apache:
+# toda petición se envía a public/, que tiene su propio .htaccess.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [L]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
