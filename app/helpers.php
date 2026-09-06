@@ -67,24 +67,28 @@ function asset(string $ruta): string
  * Con app.urls_amigables = false (predeterminado) genera index.php?r=...,
  * que funciona aunque el servidor no aplique .htaccess ni mod_rewrite.
  */
-function url(string $ruta = ''): string
+function url(string $ruta = '', array $query = []): string
 {
     $base = base_url();
     $ruta = trim($ruta, '/');
+    $amigables = (bool) cfg('app.urls_amigables', false);
+    $extra = $query ? http_build_query($query) : '';
 
     if ($ruta === '') {
-        return cfg('app.urls_amigables', false) ? $base . '/' : $base . '/index.php';
+        $url = $amigables ? $base . '/' : $base . '/index.php';
+        return $extra === '' ? $url : $url . '?' . $extra;
     }
-    if (cfg('app.urls_amigables', false)) {
-        return $base . '/' . $ruta;
+    if ($amigables) {
+        return $base . '/' . $ruta . ($extra === '' ? '' : '?' . $extra);
     }
-    return $base . '/index.php?r=' . implode('/', array_map('rawurlencode', explode('/', $ruta)));
+    return $base . '/index.php?r=' . implode('/', array_map('rawurlencode', explode('/', $ruta)))
+        . ($extra === '' ? '' : '&' . $extra);
 }
 
 /** Redirige y termina la ejecución. */
-function redirigir(string $ruta): never
+function redirigir(string $ruta, array $query = []): never
 {
-    header('Location: ' . url($ruta));
+    header('Location: ' . url($ruta, $query));
     exit;
 }
 

@@ -23,18 +23,18 @@ final class CuentasController extends Controller
         $cid = $this->colegioId();
         $q = trim((string) ($_GET['q'] ?? ''));
 
-        $sql = "SELECT s.id, s.numero, s.nombre, s.estatus,
+        $sql = "SELECT s.id, s.numero, s.nombre_completo AS nombre, s.estatus,
                        COALESCE(SUM(CASE WHEN c.tipo = 'cargo' THEN c.importe ELSE -c.importe END), 0) AS saldo
                 FROM socios s
                 LEFT JOIN cuentas c ON c.socio_id = s.id AND c.estatus = 'vigente'
                 WHERE s.colegio_id = ?";
         $params = [$cid];
         if ($q !== '') {
-            $sql .= ' AND (s.nombre LIKE ? OR s.numero LIKE ?)';
+            $sql .= ' AND (s.nombre_completo LIKE ? OR s.numero LIKE ?)';
             $like = "%{$q}%";
             array_push($params, $like, $like);
         }
-        $sql .= ' GROUP BY s.id, s.numero, s.nombre, s.estatus
+        $sql .= ' GROUP BY s.id, s.numero, s.nombre_completo, s.estatus
                   HAVING saldo <> 0 OR ? <> \'\'
                   ORDER BY saldo DESC LIMIT 300';
         $params[] = $q;

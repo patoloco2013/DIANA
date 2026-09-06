@@ -389,6 +389,79 @@ a {
     border-bottom: 1px solid var(--diana-borde);
 }
 
+/* Pestañas del expediente de socio */
+.diana-tabs {
+    border-bottom: 0;
+    gap: 0.25rem;
+}
+
+.diana-tabs .nav-link {
+    color: #4b5563;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    padding: 0.6rem 1rem;
+}
+
+.diana-tabs .nav-link:hover {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: var(--diana-borde);
+}
+
+.diana-tabs .nav-link.active {
+    color: var(--diana-primario);
+    background: #fff;
+    border-color: var(--diana-borde);
+    font-weight: 600;
+    position: relative;
+    top: 1px;
+}
+
+.diana-tabs .nav-link.disabled {
+    color: #9ca3af;
+}
+
+.diana-card-tabs {
+    border-top-left-radius: 0;
+}
+
+/* Foto / avatar del socio */
+.diana-foto-socio {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 1px solid var(--diana-borde);
+    background: #fff;
+}
+
+.diana-foto-vacia {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #9ca3af;
+    background: var(--diana-primario-suave);
+}
+
+.diana-avatar-sm {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.diana-avatar-ini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--diana-primario-oscuro);
+    background: var(--diana-primario-suave);
+}
+
 /* Tarjetas de indicadores del tablero */
 .diana-kpi .valor {
     font-size: 1.6rem;

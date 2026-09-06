@@ -38,7 +38,7 @@ final class DashboardController extends Controller
              ORDER BY fecha_inicio LIMIT 8", [$cid]);
 
         $ultimosPagos = Database::todas(
-            "SELECT c.fecha, c.importe, c.concepto, s.nombre AS socio
+            "SELECT c.fecha, c.importe, c.concepto, s.nombre_completo AS socio
              FROM cuentas c JOIN socios s ON s.id = c.socio_id
              WHERE c.colegio_id = ? AND c.tipo = 'pago' AND c.estatus = 'vigente'
              ORDER BY c.id DESC LIMIT 8", [$cid]);

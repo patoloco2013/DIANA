@@ -77,21 +77,87 @@ CREATE TABLE login_intentos (
 -- numero es el número de socio visible, único por colegio.
 -- ---------------------------------------------------------------------
 CREATE TABLE socios (
-    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    colegio_id     INT UNSIGNED NOT NULL,
-    numero         VARCHAR(20)  NOT NULL,
-    titulo         VARCHAR(30)  NULL,                 -- C.P., L.C., Dr., etc.
-    nombre         VARCHAR(150) NOT NULL,
-    rfc            VARCHAR(13)  NULL,
-    email          VARCHAR(120) NULL,
-    telefono       VARCHAR(30)  NULL,
-    estatus        ENUM('activo','suspendido','baja') NOT NULL DEFAULT 'activo',
-    observaciones  TEXT NULL,
-    creado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id        INT UNSIGNED NOT NULL,
+    numero            VARCHAR(20)  NOT NULL,
+    titulo            VARCHAR(30)  NULL,              -- C.P., L.C., Dr., etc.
+    nombre            VARCHAR(100) NOT NULL,          -- nombre(s)
+    apellido_paterno  VARCHAR(60)  NULL,
+    apellido_materno  VARCHAR(60)  NULL,
+    -- Columna generada: se usa en listados, búsquedas y reportes
+    nombre_completo   VARCHAR(230)
+        AS (TRIM(CONCAT_WS(' ', nombre, apellido_paterno, apellido_materno))) STORED,
+    rfc               VARCHAR(13)  NULL,
+    tipo              ENUM('normal','estudiante','vitalicio','honorario','no_socio') NOT NULL DEFAULT 'normal',
+    genero            ENUM('sin_especificar','femenino','masculino','otro') NOT NULL DEFAULT 'sin_especificar',
+    cumple_dia        TINYINT UNSIGNED NULL,
+    cumple_mes        TINYINT UNSIGNED NULL,
+    limite_credito    DECIMAL(10,2) NOT NULL DEFAULT 0,
+    paga_cuota_anual  TINYINT(1)   NOT NULL DEFAULT 1,
+    foto              VARCHAR(255) NULL,              -- ruta relativa en storage/uploads
+    direccion         VARCHAR(200) NULL,
+    colonia           VARCHAR(100) NULL,
+    codigo_postal     VARCHAR(10)  NULL,
+    localidad         VARCHAR(100) NULL,
+    ciudad            VARCHAR(100) NULL,
+    estado            VARCHAR(60)  NULL,
+    email             VARCHAR(120) NULL,
+    email2            VARCHAR(120) NULL,
+    telefono_oficina  VARCHAR(30)  NULL,
+    telefono_oficina2 VARCHAR(30)  NULL,
+    celular           VARCHAR(30)  NULL,
+    estatus           ENUM('activo','suspendido','baja') NOT NULL DEFAULT 'activo',
+    observaciones     TEXT NULL,
+    creado_en         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_socios_colegio_numero (colegio_id, numero),
-    INDEX idx_socios_nombre (colegio_id, nombre),
+    INDEX idx_socios_nombre (colegio_id, nombre_completo),
     CONSTRAINT fk_socios_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Documentos digitales del socio (acta, cédula, CV...). El archivo vive
+-- fuera de public/ con nombre aleatorio; se sirve vía SociosController.
+-- ---------------------------------------------------------------------
+CREATE TABLE socio_documentos (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id      INT UNSIGNED NOT NULL,
+    socio_id        INT UNSIGNED NOT NULL,
+    tipo            VARCHAR(30)  NOT NULL,             -- clave de Catalogos::TIPOS_DOCUMENTO
+    descripcion     VARCHAR(150) NULL,
+    archivo         VARCHAR(255) NOT NULL,             -- ruta relativa en storage/uploads
+    nombre_original VARCHAR(150) NOT NULL,
+    mime            VARCHAR(80)  NOT NULL,
+    tamano          INT UNSIGNED NOT NULL,             -- bytes
+    subido_por      INT UNSIGNED NULL,
+    creado_en       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_socio_documentos (socio_id, tipo),
+    CONSTRAINT fk_sdoc_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_sdoc_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id),
+    CONSTRAINT fk_sdoc_usuario FOREIGN KEY (subido_por) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Perfiles fiscales del socio (varios por socio) para facturación CFDI 4.0.
+-- ---------------------------------------------------------------------
+CREATE TABLE socio_perfiles_fiscales (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id        INT UNSIGNED NOT NULL,
+    socio_id          INT UNSIGNED NOT NULL,
+    alias             VARCHAR(60)  NOT NULL,           -- "Personal", "Despacho"...
+    razon_social      VARCHAR(254) NOT NULL,           -- tal como aparece en la CSF
+    rfc               VARCHAR(13)  NOT NULL,
+    regimen_fiscal    CHAR(3)      NOT NULL,           -- c_RegimenFiscal
+    uso_cfdi          VARCHAR(4)   NOT NULL DEFAULT 'G03', -- c_UsoCFDI
+    codigo_postal     CHAR(5)      NOT NULL,           -- domicilio fiscal del receptor
+    email_facturacion VARCHAR(120) NULL,
+    predeterminado    TINYINT(1)   NOT NULL DEFAULT 0,
+    activo            TINYINT(1)   NOT NULL DEFAULT 1,
+    creado_en         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_perfiles_socio (socio_id, predeterminado),
+    CONSTRAINT fk_spf_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_spf_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------

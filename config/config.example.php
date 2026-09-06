@@ -44,4 +44,13 @@ return [
         'max_intentos_login'    => 5,
         'bloqueo_minutos'       => 15,
     ],
+
+    'archivos' => [
+        // Carpeta de fotos y documentos de socios. Idealmente FUERA del
+        // docroot; se sirven a traves de la aplicacion, nunca por URL directa.
+        'ruta'   => __DIR__ . '/../storage/uploads',
+        // Tamano maximo por archivo. Debe ser <= upload_max_filesize y
+        // post_max_size de PHP (ver php.ini o .user.ini del hosting).
+        'max_mb' => 10,
+    ],
 ];

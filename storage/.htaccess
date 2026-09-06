@@ -1,0 +1,3 @@
+# Archivos subidos por usuarios: nunca se sirven directamente.
+# La aplicación los entrega tras verificar sesión, permiso y colegio.
+Require all denied

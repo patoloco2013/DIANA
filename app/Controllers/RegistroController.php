@@ -39,14 +39,14 @@ final class RegistroController extends Controller
         }
 
         $asistentes = Database::todas(
-            "SELECT a.*, s.numero, s.nombre AS socio_nombre
+            "SELECT a.*, s.numero, s.nombre_completo AS socio_nombre
              FROM asistencias a LEFT JOIN socios s ON s.id = a.socio_id
              WHERE a.evento_id = ? ORDER BY a.id DESC",
             [(int) $id]);
 
         $sociosActivos = Database::todas(
-            "SELECT id, numero, nombre FROM socios
-             WHERE colegio_id = ? AND estatus = 'activo' ORDER BY nombre",
+            "SELECT id, numero, nombre_completo AS nombre FROM socios
+             WHERE colegio_id = ? AND estatus = 'activo' ORDER BY nombre_completo",
             [$cid]);
 
         $this->vista('registro/evento', [

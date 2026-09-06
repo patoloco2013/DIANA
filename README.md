@@ -13,7 +13,7 @@ DIANA es la reescritura desde cero del sistema SIE (`admin.php` →
 | Módulo | Descripción |
 | --- | --- |
 | Dashboard | Indicadores: socios activos, eventos próximos, cartera y cobranza del mes |
-| Socios | Padrón por colegio: alta, edición, baja lógica, búsqueda |
+| Socios | Expediente por colegio en pestañas: datos generales (nombre y apellidos, tipo, género, cumpleaños, límite de crédito, cuota anual, foto), adicionales (domicilio, teléfonos, correos), **documentos digitales** (PDF/imágenes: acta, cédula, CV…) y **perfiles fiscales** múltiples (RFC, régimen y uso CFDI, C.P.) para facturación |
 | Eventos | Cursos/congresos con puntos EPC, precios y cupo |
 | Registro | Asistentes por evento; el cargo al socio se genera automáticamente |
 | Cuentas | Estado de cuenta por socio; cargos y pagos, cancelación auditable |
@@ -46,6 +46,17 @@ php -S localhost:8080 -t public public/router.php
 
 Acceso inicial: usuario `admin`, contraseña `Diana.2026*` — **cámbiela de
 inmediato** en Usuarios → editar.
+
+**Instalaciones existentes:** si la base ya fue creada con un `schema.sql`
+anterior, aplique en orden los scripts de `database/migraciones/` en lugar de
+volver a ejecutar el esquema completo.
+
+**Archivos subidos (fotos y documentos de socios):** se guardan en la carpeta
+`archivos.ruta` de la configuración (por omisión `storage/uploads/`, fuera de
+`public/`) y se entregan a través de la aplicación tras verificar sesión y
+colegio. PHP debe permitir el tamaño configurado: `upload_max_filesize` y
+`post_max_size` (php.ini o `.user.ini`) deben ser mayores o iguales a
+`archivos.max_mb`.
 
 ## Despliegue
 
