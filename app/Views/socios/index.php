@@ -1,7 +1,7 @@
 <?php use Diana\Core\Csrf; ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <h1 class="h4 mb-0">Socios</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
         <form method="get" action="<?= e(url('socios')) ?>" class="d-flex gap-2">
             <input type="hidden" name="r" value="socios">
             <input class="form-control" type="search" name="q" value="<?= e($q) ?>"
