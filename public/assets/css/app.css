@@ -1,0 +1,67 @@
+/* DIANA — estilos propios sobre Bootstrap 5.
+   El color primario lo define cada colegio (--diana-primario). */
+
+body {
+    background: #f5f6f8;
+}
+
+.diana-navbar {
+    background: var(--diana-primario);
+}
+
+.diana-sidebar {
+    background: color-mix(in srgb, var(--diana-primario) 92%, black);
+    min-height: calc(100vh - 56px);
+    width: 230px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 991.98px) {
+    .diana-sidebar {
+        min-height: 100vh;
+    }
+}
+
+.diana-link {
+    color: rgba(255, 255, 255, 0.85);
+    border-left: 3px solid transparent;
+}
+
+.diana-link:hover,
+.diana-link.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border-left-color: #fff;
+}
+
+.diana-main {
+    min-width: 0; /* permite que las tablas hagan scroll horizontal */
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--diana-primario);
+    --bs-btn-border-color: var(--diana-primario);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--diana-primario) 85%, black);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--diana-primario) 85%, black);
+    --bs-btn-active-bg: color-mix(in srgb, var(--diana-primario) 75%, black);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--diana-primario) 75%, black);
+}
+
+.card {
+    border: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Tarjetas de indicadores del tablero */
+.diana-kpi .valor {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+/* Login */
+.diana-login {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(150deg, var(--diana-primario, #1f0512), #2c2c34);
+}

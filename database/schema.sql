@@ -1,0 +1,190 @@
+-- =====================================================================
+-- DIANA — Esquema de base de datos (MySQL 8 / MariaDB 10.6+)
+-- Multi-colegio: una sola base de datos, todo cuelga de colegios.id
+-- Reemplaza el modelo SIE de una BD por colegio y credenciales en código.
+-- =====================================================================
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE DATABASE IF NOT EXISTS diana CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE diana;
+
+-- ---------------------------------------------------------------------
+-- Colegios (tenants). Sustituye los if($coll==2) de con2.php.
+-- ---------------------------------------------------------------------
+CREATE TABLE colegios (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    clave           VARCHAR(20)  NOT NULL UNIQUE,      -- ej. MOR, HGO
+    nombre          VARCHAR(150) NOT NULL,             -- razón social / nombre completo
+    nombre_corto    VARCHAR(60)  NOT NULL,             -- para la barra superior
+    ciudad          VARCHAR(80)  NULL,
+    email_contacto  VARCHAR(120) NULL,
+    telefono        VARCHAR(30)  NULL,
+    color_primario  CHAR(7)      NOT NULL DEFAULT '#1f0512',  -- tema por colegio
+    logo_url        VARCHAR(255) NULL,
+    activo          TINYINT(1)   NOT NULL DEFAULT 1,
+    creado_en       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Roles y permisos. Sustituye niveles + permisos(k1..kN) del SIE.
+-- permisos = arreglo JSON de módulos permitidos; ["*"] = todos.
+-- Módulos válidos: dashboard, socios, eventos, registro, cuentas,
+--                  reportes, usuarios, colegios
+-- ---------------------------------------------------------------------
+CREATE TABLE roles (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre      VARCHAR(60) NOT NULL UNIQUE,
+    descripcion VARCHAR(255) NULL,
+    permisos    JSON NOT NULL,
+    creado_en   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Usuarios del sistema (staff). colegio_id NULL = acceso a todos
+-- los colegios (superadmin); de lo contrario queda limitado al suyo.
+-- ---------------------------------------------------------------------
+CREATE TABLE usuarios (
+    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id     INT UNSIGNED NULL,
+    rol_id         INT UNSIGNED NOT NULL,
+    usuario        VARCHAR(50)  NOT NULL UNIQUE,
+    password_hash  VARCHAR(255) NOT NULL,             -- password_hash() / bcrypt-argon2
+    nombre         VARCHAR(120) NOT NULL,
+    email          VARCHAR(120) NULL,
+    telefono       VARCHAR(30)  NULL,
+    activo         TINYINT(1)   NOT NULL DEFAULT 1,
+    ultimo_acceso  DATETIME     NULL,
+    creado_en      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_usuarios_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_usuarios_rol     FOREIGN KEY (rol_id)     REFERENCES roles(id)
+) ENGINE=InnoDB;
+
+-- Bitácora de intentos de acceso (para bloqueo temporal por fuerza bruta)
+CREATE TABLE login_intentos (
+    id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    usuario   VARCHAR(50)  NOT NULL,
+    ip        VARCHAR(45)  NOT NULL,
+    exitoso   TINYINT(1)   NOT NULL DEFAULT 0,
+    creado_en TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_intentos_usuario (usuario, creado_en)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Socios (miembros del colegio). Antes: socios(cid, prof, nombrec...)
+-- numero es el número de socio visible, único por colegio.
+-- ---------------------------------------------------------------------
+CREATE TABLE socios (
+    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id     INT UNSIGNED NOT NULL,
+    numero         VARCHAR(20)  NOT NULL,
+    titulo         VARCHAR(30)  NULL,                 -- C.P., L.C., Dr., etc.
+    nombre         VARCHAR(150) NOT NULL,
+    rfc            VARCHAR(13)  NULL,
+    email          VARCHAR(120) NULL,
+    telefono       VARCHAR(30)  NULL,
+    estatus        ENUM('activo','suspendido','baja') NOT NULL DEFAULT 'activo',
+    observaciones  TEXT NULL,
+    creado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_socios_colegio_numero (colegio_id, numero),
+    INDEX idx_socios_nombre (colegio_id, nombre),
+    CONSTRAINT fk_socios_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Eventos (cursos, congresos). Antes: eventos(eid, evento, fechai...)
+-- ---------------------------------------------------------------------
+CREATE TABLE eventos (
+    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id     INT UNSIGNED NOT NULL,
+    nombre         VARCHAR(200) NOT NULL,
+    tipo           VARCHAR(60)  NULL,                 -- curso, congreso, taller...
+    fecha_inicio   DATE NOT NULL,
+    fecha_fin      DATE NULL,
+    hora_inicio    TIME NULL,
+    hora_fin       TIME NULL,
+    sede           VARCHAR(150) NULL,
+    expositores    VARCHAR(255) NULL,
+    puntos_epc     DECIMAL(6,2) NOT NULL DEFAULT 0,   -- puntos de educación continua
+    precio_socio   DECIMAL(10,2) NOT NULL DEFAULT 0,
+    precio_publico DECIMAL(10,2) NOT NULL DEFAULT 0,
+    cupo           INT UNSIGNED NULL,
+    descripcion    TEXT NULL,
+    estatus        ENUM('borrador','publicado','cerrado','cancelado') NOT NULL DEFAULT 'publicado',
+    creado_por     INT UNSIGNED NULL,
+    creado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_eventos_colegio_fecha (colegio_id, fecha_inicio),
+    CONSTRAINT fk_eventos_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_eventos_usuario FOREIGN KEY (creado_por) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Asistencias / registro a eventos. Antes: asistencia(socio, idev...)
+-- socio_id NULL = asistente del público en general (nombre en asistente).
+-- ---------------------------------------------------------------------
+CREATE TABLE asistencias (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id  INT UNSIGNED NOT NULL,
+    evento_id   INT UNSIGNED NOT NULL,
+    socio_id    INT UNSIGNED NULL,
+    asistente   VARCHAR(150) NULL,                    -- nombre si no es socio
+    tipo        ENUM('socio','publico') NOT NULL DEFAULT 'socio',
+    puntos_epc  DECIMAL(6,2) NOT NULL DEFAULT 0,
+    creado_por  INT UNSIGNED NULL,
+    creado_en   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_asistencia_evento_socio (evento_id, socio_id),
+    INDEX idx_asistencias_colegio (colegio_id, evento_id),
+    CONSTRAINT fk_asist_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_asist_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id),
+    CONSTRAINT fk_asist_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Cuentas: cargos y pagos por socio. Antes: cuentas(idsoc, doc, tdoc...)
+-- El saldo del socio = SUM(cargos) - SUM(pagos); no se guarda redundante.
+-- ---------------------------------------------------------------------
+CREATE TABLE cuentas (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id        INT UNSIGNED NOT NULL,
+    socio_id          INT UNSIGNED NOT NULL,
+    evento_id         INT UNSIGNED NULL,              -- si el cargo viene de un evento
+    tipo              ENUM('cargo','pago') NOT NULL,
+    concepto          VARCHAR(200) NOT NULL,          -- cuota anual, inscripción evento...
+    referencia        VARCHAR(60)  NULL,              -- folio, no. de recibo
+    importe           DECIMAL(10,2) NOT NULL,
+    fecha             DATE NOT NULL,
+    fecha_vencimiento DATE NULL,                      -- solo cargos
+    forma_pago        ENUM('efectivo','transferencia','tarjeta','cheque','otro') NULL, -- solo pagos
+    estatus           ENUM('vigente','cancelado') NOT NULL DEFAULT 'vigente',
+    observaciones     VARCHAR(255) NULL,
+    creado_por        INT UNSIGNED NULL,
+    creado_en         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_cuentas_socio (socio_id, fecha),
+    INDEX idx_cuentas_colegio_fecha (colegio_id, fecha),
+    CONSTRAINT fk_cuentas_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_cuentas_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id),
+    CONSTRAINT fk_cuentas_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id)
+) ENGINE=InnoDB;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =====================================================================
+-- Datos iniciales
+-- =====================================================================
+INSERT INTO colegios (clave, nombre, nombre_corto, ciudad, color_primario) VALUES
+('MOR', 'Colegio de Contadores Públicos de Michoacán, A.C.', 'CCP Michoacán', 'Morelia',  '#1f0512'),
+('HGO', 'Colegio de Contadores Públicos de Hidalgo, A.C.',   'CCP Hidalgo',   'Pachuca',  '#0d2b45');
+
+INSERT INTO roles (nombre, descripcion, permisos) VALUES
+('Administrador', 'Acceso total al sistema',                              '["*"]'),
+('Operador',      'Captura de socios, eventos, registro y cobranza',      '["dashboard","socios","eventos","registro","cuentas"]'),
+('Consulta',      'Solo lectura de reportes y tablero',                   '["dashboard","reportes"]');
+
+-- Usuario inicial: admin / Diana.2026*  — CAMBIAR el password al primer acceso.
+-- colegio_id NULL = superadmin con acceso a todos los colegios.
+INSERT INTO usuarios (colegio_id, rol_id, usuario, password_hash, nombre, email) VALUES
+(NULL, 1, 'admin', '$2y$12$.AEHDS8z58806dlpJ74TJeNiS6PGfOJm2TmLo4ilAsd3ZGV1bdqSC', 'Administrador DIANA', NULL);
