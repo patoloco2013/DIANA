@@ -23,10 +23,62 @@ function e(mixed $texto): string
     return htmlspecialchars((string) ($texto ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-/** URL absoluta dentro de la aplicación: url('socios/editar/5'). */
+/**
+ * URL base de la instalación, sin diagonal final.
+ * Si app.url viene vacío se deduce de la petición, de modo que la app
+ * funciona en cualquier subcarpeta sin configurar nada.
+ */
+function base_url(): string
+{
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+
+    $configurada = trim((string) cfg('app.url', ''));
+    // Solo se acepta una URL real; una ruta de disco mal capturada se ignora.
+    if (preg_match('#^https?://#i', $configurada)) {
+        return $base = rtrim($configurada, '/');
+    }
+
+    $esHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+        || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
+
+    // El encabezado Host lo controla el cliente: se valida antes de usarlo.
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    if (!preg_match('/^[A-Za-z0-9.\-]{1,253}(:\d{1,5})?$/', $host)) {
+        $host = 'localhost';
+    }
+
+    $dir = str_replace(chr(92), '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php')));
+    $dir = ($dir === '/' || $dir === '.') ? '' : rtrim($dir, '/');
+
+    return $base = ($esHttps ? 'https' : 'http') . '://' . $host . $dir;
+}
+
+/** URL de un archivo estático (CSS, imágenes): asset('assets/css/app.css'). */
+function asset(string $ruta): string
+{
+    return base_url() . '/' . ltrim($ruta, '/');
+}
+
+/**
+ * URL de una ruta de la aplicación: url('socios/editar/5').
+ * Con app.urls_amigables = false (predeterminado) genera index.php?r=...,
+ * que funciona aunque el servidor no aplique .htaccess ni mod_rewrite.
+ */
 function url(string $ruta = ''): string
 {
-    return rtrim(cfg('app.url', ''), '/') . '/' . ltrim($ruta, '/');
+    $base = base_url();
+    $ruta = trim($ruta, '/');
+
+    if ($ruta === '') {
+        return cfg('app.urls_amigables', false) ? $base . '/' : $base . '/index.php';
+    }
+    if (cfg('app.urls_amigables', false)) {
+        return $base . '/' . $ruta;
+    }
+    return $base . '/index.php?r=' . implode('/', array_map('rawurlencode', explode('/', $ruta)));
 }
 
 /** Redirige y termina la ejecución. */

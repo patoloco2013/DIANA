@@ -12,7 +12,7 @@ return [
         // 'produccion' oculta errores al usuario; 'desarrollo' los muestra.
         'entorno' => 'desarrollo',
         // URL base sin diagonal final, ej. https://ccpmich.com/diana
-        'url'     => 'http://localhost:8123',
+        'url'     => '',
         'zona_horaria' => 'America/Mexico_City',
     ],
 

@@ -47,24 +47,46 @@ php -S localhost:8080 -t public public/router.php
 Acceso inicial: usuario `admin`, contraseña `Diana.2026*` — **cámbiela de
 inmediato** en Usuarios → editar.
 
-## Despliegue en Apache
+## Despliegue
 
-Requiere `mod_rewrite` y `AllowOverride All` (o al menos `FileInfo Options`) en
-el directorio. Hay dos formas:
+La aplicación funciona en cualquier subcarpeta sin configurar rutas: si
+`app.url` está vacío, la URL base se deduce de la propia petición. Suba la
+carpeta completa y apunte el navegador a `.../public/`.
 
-1. **Docroot propio (recomendado):** apunte el DocumentRoot / la raíz del
-   subdominio a `public/`. `app/`, `config/` y `database/` quedan fuera del
-   alcance web.
-2. **Subcarpeta del docroot (hosting compartido):** suba la carpeta completa,
-   ej. `public_html/diana/`. El `.htaccess` raíz reenvía todo a `public/` y los
-   `.htaccess` de `app/`, `config/` y `database/` niegan el acceso directo.
-   En `config/config.php` ponga `app.url` = `https://dominio.com/diana`.
+**URLs amigables.** Por omisión (`urls_amigables => false`) las rutas se
+generan como `index.php?r=socios/editar/5`, que funciona en todo hosting.
+Actívelas (`true`) solo si el servidor aplica `.htaccess` con `mod_rewrite`;
+compruébelo abriendo `.../public/auth/login`: si Apache responde su propio
+*Not Found* ("The requested URL was not found on this server"), la reescritura
+no está activa y debe dejarlas en `false`. Habilitarlas requiere `mod_rewrite`
+cargado y `AllowOverride All` en el VirtualHost.
 
-Si al abrir `/auth/login` Apache responde su propio *Not Found* ("The requested
-URL was not found on this server"), la reescritura no está activa: revise que
-`mod_rewrite` esté cargado y que el VirtualHost permita `.htaccess`
-(`AllowOverride All`).
+**Dónde colocar los archivos.** Lo ideal es que solo `public/` sea accesible
+por web: apunte el DocumentRoot (o la raíz del subdominio) a `public/`, dejando
+`app/`, `config/` y `database/` fuera del alcance del servidor. Si no puede
+—hosting compartido, subcarpeta— quedan dentro del árbol público y su
+protección depende de los `.htaccess` incluidos, que solo aplican con
+`AllowOverride All`. En ese caso, además:
 
+- **No suba `database/` al servidor.** `schema.sql` es texto plano y se
+  descarga íntegro si el listado de directorios está activo; solo se necesita
+  una vez para crear la base de datos.
+- Los archivos `.php` no filtran su contenido mientras PHP esté activo (se
+  ejecutan, no se muestran), por lo que `config/config.php` no expone las
+  credenciales, pero conviene no dejarlo al alcance de todos modos.
+
+## Seguridad al publicar
+
+1. **Cambie de inmediato la contraseña del usuario `admin`.** La contraseña
+   inicial está documentada en este README y su hash en `database/schema.sql`,
+   ambos en un repositorio público: mientras no la cambie, cualquiera que
+   encuentre la instalación puede entrar como administrador.
+2. Ponga `'entorno' => 'produccion'` para que los errores no se muestren al
+   usuario.
+3. Con HTTPS, ponga `'solo_https' => true` en `sesion` para que la cookie de
+   sesión no viaje en claro.
+4. Use un usuario de MySQL exclusivo de la aplicación, con permisos solo sobre
+   su base de datos.
 ## Arquitectura
 
 ```
