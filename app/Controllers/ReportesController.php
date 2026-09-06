@@ -80,7 +80,8 @@ final class ReportesController extends Controller
     public function eventos(): void
     {
         $filas = Database::todas(
-            "SELECT e.nombre, e.fecha_inicio, e.estatus, e.puntos_epc,
+            "SELECT e.nombre, e.fecha_inicio, e.estatus, e.modalidad,
+                    (SELECT COALESCE(SUM(p.puntos), 0) FROM evento_puntos p WHERE p.evento_id = e.id) AS puntos_dpc,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.tipo = 'socio')   AS socios,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.tipo = 'publico') AS publico,
                     COALESCE((SELECT SUM(c.importe) FROM cuentas c

@@ -462,6 +462,31 @@ a {
     background: var(--diana-primario-suave);
 }
 
+/* Imágenes de eventos */
+.diana-evento-miniatura {
+    width: 84px;
+    height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--diana-borde);
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.diana-evento-mini {
+    width: 44px;
+    height: 32px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.diana-galeria-img {
+    height: 130px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
 /* Tarjetas de indicadores del tablero */
 .diana-kpi .valor {
     font-size: 1.6rem;

@@ -37,6 +37,56 @@ final class Catalogos
         'otro'            => 'Otro',
     ];
 
+    /**
+     * Categorías de asistente a eventos: cada evento fija un precio por
+     * categoría y modalidad. Para agregar o renombrar una categoría basta
+     * editar esta lista (los precios se guardan por clave).
+     */
+    public const CATEGORIAS_ASISTENTE = [
+        'socio'         => 'Socio',
+        'socio_inicial' => 'Socio inicial',
+        'socio_cuenta'  => 'Socio cuenta',
+        'estudiante'    => 'Estudiante',
+        'no_socio'      => 'No socio (público en general)',
+    ];
+
+    /** Categoría de precio que corresponde al tipo de socio del padrón. */
+    public const CATEGORIA_POR_TIPO_SOCIO = [
+        'normal'     => 'socio',
+        'estudiante' => 'estudiante',
+        'vitalicio'  => 'socio',
+        'honorario'  => 'socio',
+        'no_socio'   => 'no_socio',
+    ];
+
+    public const MODALIDADES = [
+        'presencial' => 'Presencial',
+        'linea'      => 'En línea',
+        'hibrido'    => 'Híbrido (presencial y en línea)',
+    ];
+
+    /** Modalidades en las que se puede asistir según la del evento. */
+    public const MODALIDADES_ASISTENCIA = [
+        'presencial' => 'Presencial',
+        'linea'      => 'En línea',
+    ];
+
+    /** Disciplinas para puntos DPC (Desarrollo Profesional Continuo). */
+    public const DISCIPLINAS = [
+        'fiscal'         => 'Fiscal',
+        'auditoria'      => 'Auditoría',
+        'contabilidad'   => 'Contabilidad',
+        'finanzas'       => 'Finanzas',
+        'etica'          => 'Ética profesional',
+        'administracion' => 'Administración',
+        'costos'         => 'Costos',
+        'legal'          => 'Legal y laboral',
+        'tecnologia'     => 'Tecnologías de información',
+        'gubernamental'  => 'Sector gubernamental',
+        'educacion'      => 'Docencia y educación',
+        'otras'          => 'Otras disciplinas',
+    ];
+
     public const TIPOS_DOCUMENTO = [
         'acta_nacimiento' => 'Acta de nacimiento',
         'curp'            => 'CURP',
