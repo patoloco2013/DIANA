@@ -11,8 +11,15 @@ return [
         'version' => '1.0.0',
         // 'produccion' oculta errores al usuario; 'desarrollo' los muestra.
         'entorno' => 'desarrollo',
-        // URL base sin diagonal final, ej. https://ccpmich.com/diana
-        'url'     => 'http://localhost:8080',
+        // URL base sin diagonal final, ej. https://bookitech.mx/alicia/fer/public
+        // Dejar vacio ('') para detectarla automaticamente de la peticion:
+        // asi la app funciona en cualquier subcarpeta sin configurar nada.
+        'url'     => '',
+
+        // true SOLO si el servidor aplica .htaccess con mod_rewrite
+        // (URLs tipo /socios/editar/5). En false usa index.php?r=... , que
+        // funciona en cualquier hosting. Verifiquelo antes de activarlo.
+        'urls_amigables' => false,
         'zona_horaria' => 'America/Mexico_City',
     ],
 
@@ -36,5 +43,14 @@ return [
         // Intentos de login fallidos permitidos antes de bloquear temporalmente
         'max_intentos_login'    => 5,
         'bloqueo_minutos'       => 15,
+    ],
+
+    'archivos' => [
+        // Carpeta de fotos y documentos de socios. Idealmente FUERA del
+        // docroot; se sirven a traves de la aplicacion, nunca por URL directa.
+        'ruta'   => __DIR__ . '/../storage/uploads',
+        // Tamano maximo por archivo. Debe ser <= upload_max_filesize y
+        // post_max_size de PHP (ver php.ini o .user.ini del hosting).
+        'max_mb' => 10,
     ],
 ];

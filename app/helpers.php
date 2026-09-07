@@ -23,16 +23,72 @@ function e(mixed $texto): string
     return htmlspecialchars((string) ($texto ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-/** URL absoluta dentro de la aplicación: url('socios/editar/5'). */
-function url(string $ruta = ''): string
+/**
+ * URL base de la instalación, sin diagonal final.
+ * Si app.url viene vacío se deduce de la petición, de modo que la app
+ * funciona en cualquier subcarpeta sin configurar nada.
+ */
+function base_url(): string
 {
-    return rtrim(cfg('app.url', ''), '/') . '/' . ltrim($ruta, '/');
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+
+    $configurada = trim((string) cfg('app.url', ''));
+    // Solo se acepta una URL real; una ruta de disco mal capturada se ignora.
+    if (preg_match('#^https?://#i', $configurada)) {
+        return $base = rtrim($configurada, '/');
+    }
+
+    $esHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+        || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
+
+    // El encabezado Host lo controla el cliente: se valida antes de usarlo.
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    if (!preg_match('/^[A-Za-z0-9.\-]{1,253}(:\d{1,5})?$/', $host)) {
+        $host = 'localhost';
+    }
+
+    $dir = str_replace(chr(92), '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php')));
+    $dir = ($dir === '/' || $dir === '.') ? '' : rtrim($dir, '/');
+
+    return $base = ($esHttps ? 'https' : 'http') . '://' . $host . $dir;
+}
+
+/** URL de un archivo estático (CSS, imágenes): asset('assets/css/app.css'). */
+function asset(string $ruta): string
+{
+    return base_url() . '/' . ltrim($ruta, '/');
+}
+
+/**
+ * URL de una ruta de la aplicación: url('socios/editar/5').
+ * Con app.urls_amigables = false (predeterminado) genera index.php?r=...,
+ * que funciona aunque el servidor no aplique .htaccess ni mod_rewrite.
+ */
+function url(string $ruta = '', array $query = []): string
+{
+    $base = base_url();
+    $ruta = trim($ruta, '/');
+    $amigables = (bool) cfg('app.urls_amigables', false);
+    $extra = $query ? http_build_query($query) : '';
+
+    if ($ruta === '') {
+        $url = $amigables ? $base . '/' : $base . '/index.php';
+        return $extra === '' ? $url : $url . '?' . $extra;
+    }
+    if ($amigables) {
+        return $base . '/' . $ruta . ($extra === '' ? '' : '?' . $extra);
+    }
+    return $base . '/index.php?r=' . implode('/', array_map('rawurlencode', explode('/', $ruta)))
+        . ($extra === '' ? '' : '&' . $extra);
 }
 
 /** Redirige y termina la ejecución. */
-function redirigir(string $ruta): never
+function redirigir(string $ruta, array $query = []): never
 {
-    header('Location: ' . url($ruta));
+    header('Location: ' . url($ruta, $query));
     exit;
 }
 
@@ -64,4 +120,43 @@ function fecha_corta(?string $fecha): string
     }
     $ts = strtotime($fecha);
     return $ts ? date('d/m/Y', $ts) : '';
+}
+
+/** Aclara (factor > 0) u oscurece (factor < 0) un color #rrggbb. */
+function color_sombra(string $hex, float $factor): string
+{
+    $hex = ltrim($hex, '#');
+    if (strlen($hex) !== 6 || !ctype_xdigit($hex)) {
+        $hex = '1f0512';
+    }
+    $salida = '#';
+    foreach (str_split($hex, 2) as $par) {
+        $c = hexdec($par);
+        $c = $factor >= 0 ? $c + (255 - $c) * $factor : $c * (1 + $factor);
+        $salida .= sprintf('%02x', (int) round(max(0, min(255, $c))));
+    }
+    return $salida;
+}
+
+/** Color de texto legible (blanco o casi negro) sobre un fondo #rrggbb. */
+function color_contraste(string $hex): string
+{
+    $hex = ltrim($hex, '#');
+    if (strlen($hex) !== 6 || !ctype_xdigit($hex)) {
+        return '#ffffff';
+    }
+    [$r, $g, $b] = array_map('hexdec', str_split($hex, 2));
+    $luminancia = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+    return $luminancia > 0.6 ? '#111827' : '#ffffff';
+}
+
+/** Iniciales (máx. 2) de un nombre, para avatares. */
+function iniciales(string $nombre): string
+{
+    $partes = preg_split('/[^\p{L}\p{N}]+/u', trim($nombre), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $ini = '';
+    foreach (array_slice($partes, 0, 2) as $p) {
+        $ini .= mb_strtoupper(mb_substr($p, 0, 1));
+    }
+    return $ini !== '' ? $ini : '?';
 }

@@ -31,14 +31,15 @@ final class DashboardController extends Controller
         ];
 
         $proximosEventos = Database::todas(
-            "SELECT id, nombre, fecha_inicio, sede, puntos_epc,
+            "SELECT id, nombre, fecha_inicio, sede, modalidad,
+                    (SELECT COALESCE(SUM(p.puntos), 0) FROM evento_puntos p WHERE p.evento_id = eventos.id) AS puntos_dpc,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = eventos.id) AS registrados
              FROM eventos
              WHERE colegio_id = ? AND estatus = 'publicado' AND fecha_inicio >= CURDATE()
              ORDER BY fecha_inicio LIMIT 8", [$cid]);
 
         $ultimosPagos = Database::todas(
-            "SELECT c.fecha, c.importe, c.concepto, s.nombre AS socio
+            "SELECT c.fecha, c.importe, c.concepto, s.nombre_completo AS socio
              FROM cuentas c JOIN socios s ON s.id = c.socio_id
              WHERE c.colegio_id = ? AND c.tipo = 'pago' AND c.estatus = 'vigente'
              ORDER BY c.id DESC LIMIT 8", [$cid]);

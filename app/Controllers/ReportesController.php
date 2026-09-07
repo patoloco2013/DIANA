@@ -24,14 +24,14 @@ final class ReportesController extends Controller
     public function saldos(): void
     {
         $filas = Database::todas(
-            "SELECT s.numero, s.nombre, s.estatus,
+            "SELECT s.numero, s.nombre_completo AS nombre, s.estatus,
                     COALESCE(SUM(CASE WHEN c.tipo = 'cargo' THEN c.importe END), 0) AS cargos,
                     COALESCE(SUM(CASE WHEN c.tipo = 'pago'  THEN c.importe END), 0) AS pagos,
                     COALESCE(SUM(CASE WHEN c.tipo = 'cargo' THEN c.importe ELSE -c.importe END), 0) AS saldo
              FROM socios s
              LEFT JOIN cuentas c ON c.socio_id = s.id AND c.estatus = 'vigente'
              WHERE s.colegio_id = ?
-             GROUP BY s.id, s.numero, s.nombre, s.estatus
+             GROUP BY s.id, s.numero, s.nombre_completo, s.estatus
              ORDER BY saldo DESC",
             [$this->colegioId()]);
 
@@ -42,7 +42,7 @@ final class ReportesController extends Controller
     public function morosidad(): void
     {
         $filas = Database::todas(
-            "SELECT s.numero, s.nombre, c.concepto, c.importe, c.fecha, c.fecha_vencimiento,
+            "SELECT s.numero, s.nombre_completo AS nombre, c.concepto, c.importe, c.fecha, c.fecha_vencimiento,
                     DATEDIFF(CURDATE(), c.fecha_vencimiento) AS dias_vencido
              FROM cuentas c
              JOIN socios s ON s.id = c.socio_id
@@ -61,7 +61,7 @@ final class ReportesController extends Controller
         $hasta = $this->fechaGet('hasta', date('Y-m-d'));
 
         $filas = Database::todas(
-            "SELECT c.fecha, c.concepto, c.referencia, c.forma_pago, c.importe, s.numero, s.nombre
+            "SELECT c.fecha, c.concepto, c.referencia, c.forma_pago, c.importe, s.numero, s.nombre_completo AS nombre
              FROM cuentas c JOIN socios s ON s.id = c.socio_id
              WHERE c.colegio_id = ? AND c.tipo = 'pago' AND c.estatus = 'vigente'
                AND c.fecha BETWEEN ? AND ?
@@ -80,7 +80,8 @@ final class ReportesController extends Controller
     public function eventos(): void
     {
         $filas = Database::todas(
-            "SELECT e.nombre, e.fecha_inicio, e.estatus, e.puntos_epc,
+            "SELECT e.nombre, e.fecha_inicio, e.estatus, e.modalidad,
+                    (SELECT COALESCE(SUM(p.puntos), 0) FROM evento_puntos p WHERE p.evento_id = e.id) AS puntos_dpc,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.tipo = 'socio')   AS socios,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.tipo = 'publico') AS publico,
                     COALESCE((SELECT SUM(c.importe) FROM cuentas c

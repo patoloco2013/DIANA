@@ -13,7 +13,7 @@ DIANA es la reescritura desde cero del sistema SIE (`admin.php` →
 | Módulo | Descripción |
 | --- | --- |
 | Dashboard | Indicadores: socios activos, eventos próximos, cartera y cobranza del mes |
-| Socios | Padrón por colegio: alta, edición, baja lógica, búsqueda |
+| Socios | Expediente por colegio en pestañas: datos generales (nombre y apellidos, tipo, género, cumpleaños, límite de crédito, cuota anual, foto), adicionales (domicilio, teléfonos, correos), **documentos digitales** (PDF/imágenes: acta, cédula, CV…) y **perfiles fiscales** múltiples (RFC, régimen y uso CFDI, C.P.) para facturación |
 | Eventos | Cursos/congresos con puntos EPC, precios y cupo |
 | Registro | Asistentes por evento; el cargo al socio se genera automáticamente |
 | Cuentas | Estado de cuenta por socio; cargos y pagos, cancelación auditable |
@@ -47,24 +47,57 @@ php -S localhost:8080 -t public public/router.php
 Acceso inicial: usuario `admin`, contraseña `Diana.2026*` — **cámbiela de
 inmediato** en Usuarios → editar.
 
-## Despliegue en Apache
+**Instalaciones existentes:** si la base ya fue creada con un `schema.sql`
+anterior, aplique en orden los scripts de `database/migraciones/` en lugar de
+volver a ejecutar el esquema completo.
 
-Requiere `mod_rewrite` y `AllowOverride All` (o al menos `FileInfo Options`) en
-el directorio. Hay dos formas:
+**Archivos subidos (fotos y documentos de socios):** se guardan en la carpeta
+`archivos.ruta` de la configuración (por omisión `storage/uploads/`, fuera de
+`public/`) y se entregan a través de la aplicación tras verificar sesión y
+colegio. PHP debe permitir el tamaño configurado: `upload_max_filesize` y
+`post_max_size` (php.ini o `.user.ini`) deben ser mayores o iguales a
+`archivos.max_mb`.
 
-1. **Docroot propio (recomendado):** apunte el DocumentRoot / la raíz del
-   subdominio a `public/`. `app/`, `config/` y `database/` quedan fuera del
-   alcance web.
-2. **Subcarpeta del docroot (hosting compartido):** suba la carpeta completa,
-   ej. `public_html/diana/`. El `.htaccess` raíz reenvía todo a `public/` y los
-   `.htaccess` de `app/`, `config/` y `database/` niegan el acceso directo.
-   En `config/config.php` ponga `app.url` = `https://dominio.com/diana`.
+## Despliegue
 
-Si al abrir `/auth/login` Apache responde su propio *Not Found* ("The requested
-URL was not found on this server"), la reescritura no está activa: revise que
-`mod_rewrite` esté cargado y que el VirtualHost permita `.htaccess`
-(`AllowOverride All`).
+La aplicación funciona en cualquier subcarpeta sin configurar rutas: si
+`app.url` está vacío, la URL base se deduce de la propia petición. Suba la
+carpeta completa y apunte el navegador a `.../public/`.
 
+**URLs amigables.** Por omisión (`urls_amigables => false`) las rutas se
+generan como `index.php?r=socios/editar/5`, que funciona en todo hosting.
+Actívelas (`true`) solo si el servidor aplica `.htaccess` con `mod_rewrite`;
+compruébelo abriendo `.../public/auth/login`: si Apache responde su propio
+*Not Found* ("The requested URL was not found on this server"), la reescritura
+no está activa y debe dejarlas en `false`. Habilitarlas requiere `mod_rewrite`
+cargado y `AllowOverride All` en el VirtualHost.
+
+**Dónde colocar los archivos.** Lo ideal es que solo `public/` sea accesible
+por web: apunte el DocumentRoot (o la raíz del subdominio) a `public/`, dejando
+`app/`, `config/` y `database/` fuera del alcance del servidor. Si no puede
+—hosting compartido, subcarpeta— quedan dentro del árbol público y su
+protección depende de los `.htaccess` incluidos, que solo aplican con
+`AllowOverride All`. En ese caso, además:
+
+- **No suba `database/` al servidor.** `schema.sql` es texto plano y se
+  descarga íntegro si el listado de directorios está activo; solo se necesita
+  una vez para crear la base de datos.
+- Los archivos `.php` no filtran su contenido mientras PHP esté activo (se
+  ejecutan, no se muestran), por lo que `config/config.php` no expone las
+  credenciales, pero conviene no dejarlo al alcance de todos modos.
+
+## Seguridad al publicar
+
+1. **Cambie de inmediato la contraseña del usuario `admin`.** La contraseña
+   inicial está documentada en este README y su hash en `database/schema.sql`,
+   ambos en un repositorio público: mientras no la cambie, cualquiera que
+   encuentre la instalación puede entrar como administrador.
+2. Ponga `'entorno' => 'produccion'` para que los errores no se muestren al
+   usuario.
+3. Con HTTPS, ponga `'solo_https' => true` en `sesion` para que la cookie de
+   sesión no viaje en claro.
+4. Use un usuario de MySQL exclusivo de la aplicación, con permisos solo sobre
+   su base de datos.
 ## Arquitectura
 
 ```

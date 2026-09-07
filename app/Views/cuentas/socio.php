@@ -1,6 +1,6 @@
 <?php use Diana\Core\Csrf; ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
-    <h1 class="h4 mb-0"><?= e(trim(($socio['titulo'] ?? '') . ' ' . $socio['nombre'])) ?></h1>
+    <h1 class="h4 mb-0"><?= e(trim(($socio['titulo'] ?? '') . ' ' . $socio['nombre_completo'])) ?></h1>
     <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('cuentas')) ?>">
         <i class="bi bi-arrow-left me-1"></i>Cuentas
     </a>

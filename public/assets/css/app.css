@@ -1,67 +1,522 @@
 /* DIANA — estilos propios sobre Bootstrap 5.
-   El color primario lo define cada colegio (--diana-primario). */
+   El acento lo define cada colegio (--diana-primario y derivados, calculados
+   en PHP). La barra lateral es siempre oscura y neutra para garantizar
+   legibilidad sin importar el color del colegio. Sin color-mix() ni otras
+   funciones CSS recientes. */
+
+:root {
+    --diana-primario: #1f0512;
+    --diana-primario-oscuro: #14030c;
+    --diana-primario-suave: #f4e6eb;
+    --diana-primario-texto: #ffffff;
+
+    --diana-sidebar-bg: #0f172a;
+    --diana-sidebar-bg-2: #1e293b;
+    --diana-sidebar-texto: #cbd5e1;
+    --diana-sidebar-tenue: #64748b;
+    --diana-sidebar-ancho: 260px;
+
+    --diana-fondo: #f3f4f6;
+    --diana-borde: #e5e7eb;
+}
 
 body {
-    background: #f5f6f8;
+    background: var(--diana-fondo);
+    color: #1f2937;
 }
 
-.diana-navbar {
-    background: var(--diana-primario);
+/* ---------- Estructura ---------- */
+.diana-app {
+    display: flex;
+    min-height: 100vh;
 }
 
-.diana-sidebar {
-    background: color-mix(in srgb, var(--diana-primario) 92%, black);
-    min-height: calc(100vh - 56px);
-    width: 230px;
-    flex-shrink: 0;
-}
-
-@media (max-width: 991.98px) {
-    .diana-sidebar {
-        min-height: 100vh;
-    }
-}
-
-.diana-link {
-    color: rgba(255, 255, 255, 0.85);
-    border-left: 3px solid transparent;
-}
-
-.diana-link:hover,
-.diana-link.active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
-    border-left-color: #fff;
+.diana-body {
+    flex: 1 1 auto;
+    min-width: 0; /* permite que las tablas hagan scroll horizontal */
+    display: flex;
+    flex-direction: column;
 }
 
 .diana-main {
-    min-width: 0; /* permite que las tablas hagan scroll horizontal */
+    padding: 1.25rem;
 }
 
+@media (min-width: 768px) {
+    .diana-main {
+        padding: 1.75rem 2rem;
+    }
+}
+
+/* ---------- Barra lateral ---------- */
+.diana-sidebar {
+    --bs-offcanvas-width: var(--diana-sidebar-ancho);
+    --bs-offcanvas-bg: var(--diana-sidebar-bg);
+    --bs-offcanvas-color: var(--diana-sidebar-texto);
+    background: var(--diana-sidebar-bg);
+    color: var(--diana-sidebar-texto);
+    width: var(--diana-sidebar-ancho);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* En escritorio Bootstrap pone a .offcanvas-lg fondo transparente y sin
+   borde con !important; se reafirman aquí para que la barra no quede blanca. */
+@media (min-width: 992px) {
+    .diana-app .diana-sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        flex: 0 0 var(--diana-sidebar-ancho);
+        background-color: var(--diana-sidebar-bg) !important;
+        color: var(--diana-sidebar-texto) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+    }
+}
+
+.diana-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.1rem 1.1rem 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.diana-brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--diana-primario);
+    color: var(--diana-primario-texto);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+.diana-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+
+.diana-brand-text strong {
+    color: #fff;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+}
+
+.diana-brand-text small {
+    color: var(--diana-sidebar-tenue);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diana-colegio-form {
+    padding: 0.9rem 1.1rem 0.25rem;
+}
+
+.diana-select {
+    background-color: var(--diana-sidebar-bg-2);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.diana-select:focus {
+    background-color: var(--diana-sidebar-bg-2);
+    border-color: var(--diana-primario);
+    color: #fff;
+    box-shadow: none;
+}
+
+.diana-section-label {
+    display: block;
+    padding: 1rem 1.1rem 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--diana-sidebar-tenue);
+}
+
+.diana-nav {
+    padding: 0 0.6rem 1rem;
+    flex: 1 1 auto;
+}
+
+.diana-nav .diana-section-label {
+    padding-left: 0.5rem;
+}
+
+.diana-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    margin: 0.1rem 0;
+    border-radius: 8px;
+    color: var(--diana-sidebar-texto);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.diana-link .bi {
+    font-size: 1.1rem;
+    width: 1.25rem;
+    text-align: center;
+    color: var(--diana-sidebar-tenue);
+    transition: color 0.15s;
+}
+
+.diana-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+
+.diana-link:hover .bi {
+    color: #fff;
+}
+
+.diana-link.active {
+    background: var(--diana-primario);
+    color: var(--diana-primario-texto);
+    font-weight: 600;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.diana-link.active .bi {
+    color: var(--diana-primario-texto);
+}
+
+.diana-user {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.9rem 1.1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.diana-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--diana-sidebar-bg-2);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.diana-user-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+}
+
+.diana-user-text strong {
+    color: #fff;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diana-user-text small {
+    color: var(--diana-sidebar-tenue);
+    font-size: 0.75rem;
+}
+
+.diana-icon-btn {
+    border: 0;
+    background: transparent;
+    color: var(--diana-sidebar-tenue);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.diana-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.diana-icon-btn-dark {
+    color: #374151;
+}
+
+.diana-icon-btn-dark:hover {
+    background: var(--diana-fondo);
+    color: #111827;
+}
+
+/* ---------- Barra superior ---------- */
+.diana-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    background: #fff;
+    border-bottom: 1px solid var(--diana-borde);
+    border-top: 3px solid var(--diana-primario);
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+@media (min-width: 768px) {
+    .diana-topbar {
+        padding: 0.85rem 2rem;
+    }
+}
+
+.diana-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.diana-breadcrumb .bi {
+    font-size: 0.7rem;
+}
+
+.diana-breadcrumb strong {
+    color: #111827;
+    font-weight: 600;
+}
+
+.diana-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: var(--diana-primario-suave);
+    color: var(--diana-primario-oscuro);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Las vistas traen su propio <h1 class="h4">; en pantallas grandes el
+   título ya está en la barra superior, así que se reduce el énfasis. */
+.diana-main > h1.h4,
+.diana-main > .d-flex > h1.h4 {
+    font-size: 1.15rem;
+    color: #374151;
+}
+
+/* ---------- Componentes ---------- */
 .btn-primary {
     --bs-btn-bg: var(--diana-primario);
     --bs-btn-border-color: var(--diana-primario);
-    --bs-btn-hover-bg: color-mix(in srgb, var(--diana-primario) 85%, black);
-    --bs-btn-hover-border-color: color-mix(in srgb, var(--diana-primario) 85%, black);
-    --bs-btn-active-bg: color-mix(in srgb, var(--diana-primario) 75%, black);
-    --bs-btn-active-border-color: color-mix(in srgb, var(--diana-primario) 75%, black);
+    --bs-btn-color: var(--diana-primario-texto);
+    --bs-btn-hover-bg: var(--diana-primario-oscuro);
+    --bs-btn-hover-border-color: var(--diana-primario-oscuro);
+    --bs-btn-hover-color: var(--diana-primario-texto);
+    --bs-btn-active-bg: var(--diana-primario-oscuro);
+    --bs-btn-active-border-color: var(--diana-primario-oscuro);
+    --bs-btn-active-color: var(--diana-primario-texto);
+    --bs-btn-disabled-bg: var(--diana-primario);
+    --bs-btn-disabled-border-color: var(--diana-primario);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--diana-primario);
+    --bs-btn-border-color: var(--diana-primario);
+    --bs-btn-hover-bg: var(--diana-primario);
+    --bs-btn-hover-border-color: var(--diana-primario);
+    --bs-btn-hover-color: var(--diana-primario-texto);
+    --bs-btn-active-bg: var(--diana-primario-oscuro);
+    --bs-btn-active-border-color: var(--diana-primario-oscuro);
+    --bs-btn-active-color: var(--diana-primario-texto);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--diana-primario);
+    box-shadow: 0 0 0 0.2rem var(--diana-primario-suave);
+}
+
+a {
+    color: var(--diana-primario);
 }
 
 .card {
-    border: 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--diana-borde);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--diana-borde);
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.card > .table-responsive:last-child .table {
+    margin-bottom: 0;
+}
+
+.card > .table-responsive:last-child {
+    border-radius: 0 0 12px 12px;
+}
+
+.table thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    background: #f9fafb;
+    border-bottom: 1px solid var(--diana-borde);
+}
+
+/* Pestañas del expediente de socio */
+.diana-tabs {
+    border-bottom: 0;
+    gap: 0.25rem;
+}
+
+.diana-tabs .nav-link {
+    color: #4b5563;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    padding: 0.6rem 1rem;
+}
+
+.diana-tabs .nav-link:hover {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: var(--diana-borde);
+}
+
+.diana-tabs .nav-link.active {
+    color: var(--diana-primario);
+    background: #fff;
+    border-color: var(--diana-borde);
+    font-weight: 600;
+    position: relative;
+    top: 1px;
+}
+
+.diana-tabs .nav-link.disabled {
+    color: #9ca3af;
+}
+
+.diana-card-tabs {
+    border-top-left-radius: 0;
+}
+
+/* Foto / avatar del socio */
+.diana-foto-socio {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 1px solid var(--diana-borde);
+    background: #fff;
+}
+
+.diana-foto-vacia {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #9ca3af;
+    background: var(--diana-primario-suave);
+}
+
+.diana-avatar-sm {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.diana-avatar-ini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--diana-primario-oscuro);
+    background: var(--diana-primario-suave);
+}
+
+/* Imágenes de eventos */
+.diana-evento-miniatura {
+    width: 84px;
+    height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--diana-borde);
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.diana-evento-mini {
+    width: 44px;
+    height: 32px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.diana-galeria-img {
+    height: 130px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
 }
 
 /* Tarjetas de indicadores del tablero */
 .diana-kpi .valor {
     font-size: 1.6rem;
     font-weight: 700;
+    color: #111827;
 }
 
-/* Login */
+/* ---------- Login ---------- */
 .diana-login {
     min-height: 100vh;
     display: grid;
     place-items: center;
-    background: linear-gradient(150deg, var(--diana-primario, #1f0512), #2c2c34);
+    background: linear-gradient(150deg, var(--diana-sidebar-bg), var(--diana-sidebar-bg-2));
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+    .diana-sidebar,
+    .diana-topbar,
+    .btn,
+    .alert {
+        display: none !important;
+    }
+
+    .diana-main {
+        padding: 0;
+    }
+
+    .card {
+        border: 0;
+        box-shadow: none;
+    }
 }

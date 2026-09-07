@@ -1,0 +1,11 @@
+# Configuracion local con credenciales: nunca se versiona
+config/config.php
+
+# Archivos subidos por usuarios
+storage/uploads/
+
+# Dependencias / temporales
+vendor/
+*.log
+.DS_Store
+Thumbs.db

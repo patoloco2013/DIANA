@@ -77,21 +77,87 @@ CREATE TABLE login_intentos (
 -- numero es el número de socio visible, único por colegio.
 -- ---------------------------------------------------------------------
 CREATE TABLE socios (
-    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    colegio_id     INT UNSIGNED NOT NULL,
-    numero         VARCHAR(20)  NOT NULL,
-    titulo         VARCHAR(30)  NULL,                 -- C.P., L.C., Dr., etc.
-    nombre         VARCHAR(150) NOT NULL,
-    rfc            VARCHAR(13)  NULL,
-    email          VARCHAR(120) NULL,
-    telefono       VARCHAR(30)  NULL,
-    estatus        ENUM('activo','suspendido','baja') NOT NULL DEFAULT 'activo',
-    observaciones  TEXT NULL,
-    creado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id        INT UNSIGNED NOT NULL,
+    numero            VARCHAR(20)  NOT NULL,
+    titulo            VARCHAR(30)  NULL,              -- C.P., L.C., Dr., etc.
+    nombre            VARCHAR(100) NOT NULL,          -- nombre(s)
+    apellido_paterno  VARCHAR(60)  NULL,
+    apellido_materno  VARCHAR(60)  NULL,
+    -- Columna generada: se usa en listados, búsquedas y reportes
+    nombre_completo   VARCHAR(230)
+        AS (TRIM(CONCAT_WS(' ', nombre, apellido_paterno, apellido_materno))) STORED,
+    rfc               VARCHAR(13)  NULL,
+    tipo              ENUM('normal','estudiante','vitalicio','honorario','no_socio') NOT NULL DEFAULT 'normal',
+    genero            ENUM('sin_especificar','femenino','masculino','otro') NOT NULL DEFAULT 'sin_especificar',
+    cumple_dia        TINYINT UNSIGNED NULL,
+    cumple_mes        TINYINT UNSIGNED NULL,
+    limite_credito    DECIMAL(10,2) NOT NULL DEFAULT 0,
+    paga_cuota_anual  TINYINT(1)   NOT NULL DEFAULT 1,
+    foto              VARCHAR(255) NULL,              -- ruta relativa en storage/uploads
+    direccion         VARCHAR(200) NULL,
+    colonia           VARCHAR(100) NULL,
+    codigo_postal     VARCHAR(10)  NULL,
+    localidad         VARCHAR(100) NULL,
+    ciudad            VARCHAR(100) NULL,
+    estado            VARCHAR(60)  NULL,
+    email             VARCHAR(120) NULL,
+    email2            VARCHAR(120) NULL,
+    telefono_oficina  VARCHAR(30)  NULL,
+    telefono_oficina2 VARCHAR(30)  NULL,
+    celular           VARCHAR(30)  NULL,
+    estatus           ENUM('activo','suspendido','baja') NOT NULL DEFAULT 'activo',
+    observaciones     TEXT NULL,
+    creado_en         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_socios_colegio_numero (colegio_id, numero),
-    INDEX idx_socios_nombre (colegio_id, nombre),
+    INDEX idx_socios_nombre (colegio_id, nombre_completo),
     CONSTRAINT fk_socios_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Documentos digitales del socio (acta, cédula, CV...). El archivo vive
+-- fuera de public/ con nombre aleatorio; se sirve vía SociosController.
+-- ---------------------------------------------------------------------
+CREATE TABLE socio_documentos (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id      INT UNSIGNED NOT NULL,
+    socio_id        INT UNSIGNED NOT NULL,
+    tipo            VARCHAR(30)  NOT NULL,             -- clave de Catalogos::TIPOS_DOCUMENTO
+    descripcion     VARCHAR(150) NULL,
+    archivo         VARCHAR(255) NOT NULL,             -- ruta relativa en storage/uploads
+    nombre_original VARCHAR(150) NOT NULL,
+    mime            VARCHAR(80)  NOT NULL,
+    tamano          INT UNSIGNED NOT NULL,             -- bytes
+    subido_por      INT UNSIGNED NULL,
+    creado_en       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_socio_documentos (socio_id, tipo),
+    CONSTRAINT fk_sdoc_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_sdoc_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id),
+    CONSTRAINT fk_sdoc_usuario FOREIGN KEY (subido_por) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Perfiles fiscales del socio (varios por socio) para facturación CFDI 4.0.
+-- ---------------------------------------------------------------------
+CREATE TABLE socio_perfiles_fiscales (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id        INT UNSIGNED NOT NULL,
+    socio_id          INT UNSIGNED NOT NULL,
+    alias             VARCHAR(60)  NOT NULL,           -- "Personal", "Despacho"...
+    razon_social      VARCHAR(254) NOT NULL,           -- tal como aparece en la CSF
+    rfc               VARCHAR(13)  NOT NULL,
+    regimen_fiscal    CHAR(3)      NOT NULL,           -- c_RegimenFiscal
+    uso_cfdi          VARCHAR(4)   NOT NULL DEFAULT 'G03', -- c_UsoCFDI
+    codigo_postal     CHAR(5)      NOT NULL,           -- domicilio fiscal del receptor
+    email_facturacion VARCHAR(120) NULL,
+    predeterminado    TINYINT(1)   NOT NULL DEFAULT 0,
+    activo            TINYINT(1)   NOT NULL DEFAULT 1,
+    creado_en         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_perfiles_socio (socio_id, predeterminado),
+    CONSTRAINT fk_spf_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_spf_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -102,15 +168,18 @@ CREATE TABLE eventos (
     colegio_id     INT UNSIGNED NOT NULL,
     nombre         VARCHAR(200) NOT NULL,
     tipo           VARCHAR(60)  NULL,                 -- curso, congreso, taller...
+    modalidad      ENUM('presencial','linea','hibrido') NOT NULL DEFAULT 'presencial',
     fecha_inicio   DATE NOT NULL,
     fecha_fin      DATE NULL,
     hora_inicio    TIME NULL,
     hora_fin       TIME NULL,
-    sede           VARCHAR(150) NULL,
+    sede           VARCHAR(150) NULL,                 -- solo presencial/híbrido
     expositores    VARCHAR(255) NULL,
-    puntos_epc     DECIMAL(6,2) NOT NULL DEFAULT 0,   -- puntos de educación continua
-    precio_socio   DECIMAL(10,2) NOT NULL DEFAULT 0,
-    precio_publico DECIMAL(10,2) NOT NULL DEFAULT 0,
+    enlace_sesion  VARCHAR(500) NULL,                 -- Webex, Zoom, Teams...
+    clave_sesion   VARCHAR(60)  NULL,
+    -- 'evento': los puntos DPC se fijan para todo el evento.
+    -- 'modulo': cada módulo tiene sus propios puntos y el total es su suma.
+    esquema_puntos ENUM('evento','modulo') NOT NULL DEFAULT 'evento',
     cupo           INT UNSIGNED NULL,
     descripcion    TEXT NULL,
     estatus        ENUM('borrador','publicado','cerrado','cancelado') NOT NULL DEFAULT 'publicado',
@@ -123,6 +192,80 @@ CREATE TABLE eventos (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Módulos del evento (p. ej. un módulo por día en un diplomado).
+-- ---------------------------------------------------------------------
+CREATE TABLE evento_modulos (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id  INT UNSIGNED NOT NULL,
+    evento_id   INT UNSIGNED NOT NULL,
+    orden       SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    nombre      VARCHAR(200) NOT NULL,
+    fecha       DATE NULL,
+    hora_inicio TIME NULL,
+    hora_fin    TIME NULL,
+    expositores VARCHAR(255) NULL,
+    sede        VARCHAR(150) NULL,
+    creado_en   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_modulos_evento (evento_id, orden),
+    CONSTRAINT fk_emod_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_emod_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Puntos DPC por disciplina. modulo_id NULL = puntos de todo el evento;
+-- con modulo_id = puntos de ese módulo (esquema_puntos = 'modulo').
+-- ---------------------------------------------------------------------
+CREATE TABLE evento_puntos (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id INT UNSIGNED NOT NULL,
+    evento_id  INT UNSIGNED NOT NULL,
+    modulo_id  INT UNSIGNED NULL,
+    disciplina VARCHAR(30)  NOT NULL,                 -- clave de Catalogos::DISCIPLINAS
+    puntos     DECIMAL(6,2) NOT NULL DEFAULT 0,
+    INDEX idx_puntos_evento (evento_id, modulo_id),
+    CONSTRAINT fk_epun_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_epun_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_epun_modulo  FOREIGN KEY (modulo_id)  REFERENCES evento_modulos(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Precio por categoría de asistente y modalidad.
+-- ---------------------------------------------------------------------
+CREATE TABLE evento_precios (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id INT UNSIGNED NOT NULL,
+    evento_id  INT UNSIGNED NOT NULL,
+    categoria  VARCHAR(20) NOT NULL,                  -- clave de Catalogos::CATEGORIAS_ASISTENTE
+    modalidad  ENUM('presencial','linea') NOT NULL DEFAULT 'presencial',
+    precio     DECIMAL(10,2) NOT NULL DEFAULT 0,
+    UNIQUE KEY uq_precio (evento_id, categoria, modalidad),
+    CONSTRAINT fk_epre_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_epre_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Imágenes del evento: una principal y las demás opcionales (galería).
+-- ---------------------------------------------------------------------
+CREATE TABLE evento_imagenes (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id      INT UNSIGNED NOT NULL,
+    evento_id       INT UNSIGNED NOT NULL,
+    archivo         VARCHAR(255) NOT NULL,            -- ruta relativa en storage/uploads
+    nombre_original VARCHAR(150) NOT NULL,
+    mime            VARCHAR(80)  NOT NULL,
+    tamano          INT UNSIGNED NOT NULL,
+    titulo          VARCHAR(150) NULL,
+    principal       TINYINT(1)   NOT NULL DEFAULT 0,
+    orden           SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    subido_por      INT UNSIGNED NULL,
+    creado_en       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_imagenes_evento (evento_id, principal, orden),
+    CONSTRAINT fk_eimg_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
+    CONSTRAINT fk_eimg_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_eimg_usuario FOREIGN KEY (subido_por) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Asistencias / registro a eventos. Antes: asistencia(socio, idev...)
 -- socio_id NULL = asistente del público en general (nombre en asistente).
 -- ---------------------------------------------------------------------
@@ -132,8 +275,11 @@ CREATE TABLE asistencias (
     evento_id   INT UNSIGNED NOT NULL,
     socio_id    INT UNSIGNED NULL,
     asistente   VARCHAR(150) NULL,                    -- nombre si no es socio
+    email       VARCHAR(120) NULL,                    -- para enviarle el enlace en línea
     tipo        ENUM('socio','publico') NOT NULL DEFAULT 'socio',
-    puntos_epc  DECIMAL(6,2) NOT NULL DEFAULT 0,
+    categoria   VARCHAR(20)  NOT NULL DEFAULT 'socio',-- categoría de precio aplicada
+    modalidad   ENUM('presencial','linea') NOT NULL DEFAULT 'presencial',
+    puntos_dpc  DECIMAL(6,2) NOT NULL DEFAULT 0,
     creado_por  INT UNSIGNED NULL,
     creado_en   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_asistencia_evento_socio (evento_id, socio_id),
