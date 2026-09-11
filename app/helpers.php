@@ -160,3 +160,28 @@ function iniciales(string $nombre): string
     }
     return $ini !== '' ? $ini : '?';
 }
+
+/** "Hoy", "Mañana" o "En N días" a partir de una fecha (pensada para fechas futuras). */
+function dias_relativo(string $fecha): string
+{
+    $hoy = new DateTimeImmutable(date('Y-m-d'));
+    $dia = new DateTimeImmutable(substr($fecha, 0, 10));
+    $dias = (int) $hoy->diff($dia)->format('%r%a');
+    return match (true) {
+        $dias <= 0 => 'Hoy',
+        $dias === 1 => 'Mañana',
+        default => "En {$dias} días",
+    };
+}
+
+/** "Vie 20 sep" a partir de YYYY-MM-DD, sin depender del locale del servidor. */
+function fecha_evento(string $fecha): string
+{
+    static $dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    static $meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    $ts = strtotime($fecha);
+    if (!$ts) {
+        return '';
+    }
+    return $dias[(int) date('w', $ts)] . ' ' . (int) date('j', $ts) . ' ' . $meses[(int) date('n', $ts) - 1];
+}

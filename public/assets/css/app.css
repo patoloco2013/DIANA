@@ -494,6 +494,74 @@ a {
     color: #111827;
 }
 
+.diana-kpi-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.diana-kpi-primario { border-left: 3px solid var(--diana-primario); }
+.diana-kpi-primario .diana-kpi-icono { background: var(--diana-primario-suave); color: var(--diana-primario-oscuro); }
+
+.diana-kpi-info { border-left: 3px solid #3b82f6; }
+.diana-kpi-info .diana-kpi-icono { background: #dbeafe; color: #1d4ed8; }
+
+.diana-kpi-exito { border-left: 3px solid #22c55e; }
+.diana-kpi-exito .diana-kpi-icono { background: #dcfce7; color: #15803d; }
+
+.diana-kpi-neutro { border-left: 3px solid #94a3b8; }
+.diana-kpi-neutro .diana-kpi-icono { background: #f1f5f9; color: #475569; }
+
+/* Tarjetas de eventos próximos (tablero) */
+.diana-evento-card-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
+.diana-evento-card-img-grande {
+    height: 220px;
+}
+
+.diana-evento-card-img-vacia {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #9ca3af;
+    background: var(--diana-primario-suave);
+}
+
+.diana-badge-cuando {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: var(--diana-primario);
+    color: var(--diana-primario-texto);
+    font-weight: 600;
+}
+
+.diana-evento-destacado {
+    border: 1px solid var(--diana-primario);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.diana-progreso-cupo {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--diana-fondo);
+}
+
+.diana-progreso-cupo .progress-bar {
+    background: var(--diana-primario);
+}
+
 /* ---------- Login ---------- */
 .diana-login {
     min-height: 100vh;
