@@ -71,21 +71,12 @@ final class Catalogos
         'linea'      => 'En línea',
     ];
 
-    /** Disciplinas para puntos DPC (Desarrollo Profesional Continuo). */
-    public const DISCIPLINAS = [
-        'fiscal'         => 'Fiscal',
-        'auditoria'      => 'Auditoría',
-        'contabilidad'   => 'Contabilidad',
-        'finanzas'       => 'Finanzas',
-        'etica'          => 'Ética profesional',
-        'administracion' => 'Administración',
-        'costos'         => 'Costos',
-        'legal'          => 'Legal y laboral',
-        'tecnologia'     => 'Tecnologías de información',
-        'gubernamental'  => 'Sector gubernamental',
-        'educacion'      => 'Docencia y educación',
-        'otras'          => 'Otras disciplinas',
-    ];
+    /**
+     * Las disciplinas para puntos DPC ya NO son una lista fija: cada colegio
+     * las administra desde su propio catálogo (tabla `disciplinas`, ver
+     * Diana\Controllers\DisciplinasController). Un colegio nuevo arranca con
+     * DisciplinasController::SEMILLA como punto de partida editable.
+     */
 
     public const TIPOS_DOCUMENTO = [
         'acta_nacimiento' => 'Acta de nacimiento',

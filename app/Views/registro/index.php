@@ -9,12 +9,14 @@
                     <th>Evento</th><th>Fecha</th>
                     <th class="d-none d-md-table-cell">Modalidad</th>
                     <th class="d-none d-lg-table-cell text-end">DPC</th>
-                    <th class="text-end">Registrados</th><th class="text-end">Cupo</th><th></th>
+                    <th class="text-end">Confirmados</th>
+                    <th class="text-end d-none d-sm-table-cell">Asistieron</th>
+                    <th class="text-end">Cupo</th><th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
             <?php if (!$eventos): ?>
-                <tr><td colspan="7" class="text-center text-muted py-4">No hay eventos publicados.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No hay eventos publicados.</td></tr>
             <?php endif; ?>
             <?php foreach ($eventos as $ev): ?>
                 <tr>
@@ -28,10 +30,14 @@
                     </td>
                     <td class="d-none d-lg-table-cell text-end"><?= e(number_format((float) $ev['puntos_dpc'], 2)) ?></td>
                     <td class="text-end"><?= (int) $ev['registrados'] ?></td>
+                    <td class="text-end d-none d-sm-table-cell"><?= (int) $ev['asistieron'] ?></td>
                     <td class="text-end"><?= $ev['cupo'] !== null ? (int) $ev['cupo'] : '—' ?></td>
-                    <td class="text-end">
-                        <a class="btn btn-sm btn-primary text-nowrap" href="<?= e(url('registro/evento/' . (int) $ev['id'])) ?>">
-                            <i class="bi bi-clipboard2-check me-1"></i>Tomar registro
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-primary" title="Confirmaciones" href="<?= e(url('registro/evento/' . (int) $ev['id'])) ?>">
+                            <i class="bi bi-clipboard2-check"></i>
+                        </a>
+                        <a class="btn btn-sm btn-outline-secondary" title="Asistencia" href="<?= e(url('registro/asistencia/' . (int) $ev['id'])) ?>">
+                            <i class="bi bi-person-check"></i>
                         </a>
                     </td>
                 </tr>

@@ -84,6 +84,7 @@ final class ReportesController extends Controller
                     (SELECT COALESCE(SUM(p.puntos), 0) FROM evento_puntos p WHERE p.evento_id = e.id) AS puntos_dpc,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.tipo = 'socio')   AS socios,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.tipo = 'publico') AS publico,
+                    (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.asistio = 1)      AS asistieron,
                     COALESCE((SELECT SUM(c.importe) FROM cuentas c
                               WHERE c.evento_id = e.id AND c.tipo = 'cargo' AND c.estatus = 'vigente'), 0) AS facturado,
                     COALESCE((SELECT SUM(c.importe) FROM cuentas c

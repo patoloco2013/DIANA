@@ -13,12 +13,13 @@
                 <tr>
                     <th>Evento</th><th>Fecha</th><th>Estatus</th>
                     <th class="text-end">Socios</th><th class="text-end">Público</th>
+                    <th class="text-end">Asistieron</th>
                     <th class="text-end">Facturado</th><th class="text-end">Cobrado</th>
                 </tr>
             </thead>
             <tbody>
             <?php if (!$filas): ?>
-                <tr><td colspan="7" class="text-center text-muted py-4">Sin eventos.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">Sin eventos.</td></tr>
             <?php endif; ?>
             <?php foreach ($filas as $f): ?>
                 <tr>
@@ -27,6 +28,7 @@
                     <td><?= e($f['estatus']) ?></td>
                     <td class="text-end"><?= (int) $f['socios'] ?></td>
                     <td class="text-end"><?= (int) $f['publico'] ?></td>
+                    <td class="text-end"><?= (int) $f['asistieron'] ?></td>
                     <td class="text-end"><?= e(dinero($f['facturado'])) ?></td>
                     <td class="text-end"><?= e(dinero($f['cobrado'])) ?></td>
                 </tr>

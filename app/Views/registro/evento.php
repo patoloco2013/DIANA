@@ -24,6 +24,17 @@ $unaModalidad = count($modalidades) === 1 ? $modalidades[0] : null;
     <?php if ($modulos): ?> · <?= count($modulos) ?> módulos<?php endif; ?>
 </p>
 
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item">
+        <span class="nav-link active"><i class="bi bi-clipboard2-check me-1"></i>1. Confirmaciones</span>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="<?= e(url('registro/asistencia/' . $idEvento)) ?>">
+            <i class="bi bi-person-check me-1"></i>2. Asistencia
+        </a>
+    </li>
+</ul>
+
 <?php if ($evento['enlace_sesion']): ?>
 <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2">
     <i class="bi bi-camera-video"></i>
@@ -38,7 +49,7 @@ $unaModalidad = count($modalidades) === 1 ? $modalidades[0] : null;
 <div class="row g-3">
     <div class="col-12 col-lg-4">
         <div class="card">
-            <div class="card-header bg-white fw-semibold">Registrar asistente</div>
+            <div class="card-header bg-white fw-semibold">Confirmar asistente</div>
             <div class="card-body">
                 <form method="post" action="<?= e(url('registro/agregar/' . $idEvento)) ?>">
                     <?= Csrf::campo() ?>
@@ -83,10 +94,10 @@ $unaModalidad = count($modalidades) === 1 ? $modalidades[0] : null;
                             <option value="<?= (int) $s['id'] ?>"><?= e($s['numero'] . ' · ' . $s['nombre']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text">El cargo se genera en su estado de cuenta.</div>
+                        <div class="form-text">Se generará el cargo en su estado de cuenta.</div>
                     </div>
                     <button class="btn btn-primary w-100" name="tipo" value="socio" type="submit">
-                        <i class="bi bi-person-check me-1"></i>Registrar socio
+                        <i class="bi bi-person-check me-1"></i>Confirmar socio
                     </button>
 
                     <hr>
@@ -99,7 +110,7 @@ $unaModalidad = count($modalidades) === 1 ? $modalidades[0] : null;
                         <input class="form-control" id="email" name="email" type="email" maxlength="120">
                     </div>
                     <button class="btn btn-outline-primary w-100" name="tipo" value="publico" type="submit">
-                        <i class="bi bi-person-plus me-1"></i>Registrar público
+                        <i class="bi bi-person-plus me-1"></i>Confirmar público
                     </button>
                 </form>
             </div>
@@ -129,7 +140,7 @@ $unaModalidad = count($modalidades) === 1 ? $modalidades[0] : null;
     <div class="col-12 col-lg-8">
         <div class="card">
             <div class="card-header bg-white fw-semibold">
-                Asistentes registrados
+                Confirmados
                 <span class="badge text-bg-secondary ms-1"><?= count($asistentes) ?><?= $evento['cupo'] !== null ? ' / ' . (int) $evento['cupo'] : '' ?></span>
             </div>
             <div class="table-responsive">
@@ -138,31 +149,63 @@ $unaModalidad = count($modalidades) === 1 ? $modalidades[0] : null;
                         <tr>
                             <th>Asistente</th>
                             <th>Categoría</th>
-                            <th class="d-none d-md-table-cell">Modalidad</th>
-                            <th class="d-none d-lg-table-cell">Registro</th>
+                            <th class="d-none d-md-table-cell">Cargo / cobrado</th>
+                            <th class="d-none d-lg-table-cell">Asistió</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (!$asistentes): ?>
-                        <tr><td colspan="5" class="text-center text-muted py-4">Aún no hay registros.</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-4">Aún no hay confirmaciones.</td></tr>
                     <?php endif; ?>
                     <?php foreach ($asistentes as $a): ?>
+                        <?php $ep = $estadoPago[(int) $a['socio_id']] ?? null; ?>
                         <tr>
                             <td>
                                 <?= e($a['socio_id'] ? ($a['numero'] . ' · ' . $a['socio_nombre']) : $a['asistente']) ?>
                                 <?php if ($a['email']): ?><div class="small text-muted"><?= e($a['email']) ?></div><?php endif; ?>
+                                <div class="small text-muted"><?= e(Catalogos::MODALIDADES_ASISTENCIA[$a['modalidad']] ?? $a['modalidad']) ?></div>
                             </td>
                             <td>
                                 <span class="badge text-bg-<?= $a['tipo'] === 'socio' ? 'success' : 'info' ?>">
                                     <?= e(Catalogos::CATEGORIAS_ASISTENTE[$a['categoria']] ?? $a['categoria']) ?>
                                 </span>
                             </td>
-                            <td class="d-none d-md-table-cell small"><?= e(Catalogos::MODALIDADES_ASISTENCIA[$a['modalidad']] ?? $a['modalidad']) ?></td>
-                            <td class="d-none d-lg-table-cell small text-muted"><?= e(fecha_corta(substr((string) $a['creado_en'], 0, 10))) ?></td>
+                            <td class="d-none d-md-table-cell small">
+                                <?php if ($a['tipo'] === 'publico'): ?>
+                                    <span class="text-muted">Cobro directo (caja)</span>
+                                <?php elseif ($ep === null): ?>
+                                    <span class="text-muted">Sin costo</span>
+                                <?php else: ?>
+                                    <?= e(dinero($ep['cargo'])) ?> / <?= e(dinero($ep['cobrado'])) ?>
+                                    <span class="badge text-bg-<?= $ep['pagado'] ? 'success' : 'warning' ?> ms-1">
+                                        <?= $ep['pagado'] ? 'Pagado' : 'Pendiente' ?>
+                                    </span>
+                                    <?php if (!$ep['pagado']): ?>
+                                    <details class="mt-1">
+                                        <summary class="text-primary" style="cursor: pointer; font-size: .8rem;">Registrar pago</summary>
+                                        <form class="d-flex gap-1 mt-1" method="post" action="<?= e(url('registro/registrarPago/' . $idEvento . '/' . (int) $a['id'])) ?>">
+                                            <?= Csrf::campo() ?>
+                                            <input class="form-control form-control-sm" type="number" step="0.01" min="0.01" name="importe" placeholder="Importe" style="max-width: 100px;" required>
+                                            <select class="form-select form-select-sm" name="forma_pago" style="max-width: 120px;">
+                                                <?php foreach ($formasPago as $fp): ?>
+                                                <option value="<?= $fp ?>"><?= ucfirst($fp) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit">Guardar</button>
+                                        </form>
+                                    </details>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                <span class="badge text-bg-<?= (int) $a['asistio'] === 1 ? 'success' : 'secondary' ?>">
+                                    <?= (int) $a['asistio'] === 1 ? 'Sí' : 'No' ?>
+                                </span>
+                            </td>
                             <td class="text-end">
                                 <form method="post" action="<?= e(url('registro/quitar/' . $idEvento . '/' . (int) $a['id'])) ?>"
-                                      onsubmit="return confirm('¿Quitar este registro? El cargo del evento se cancelará.');">
+                                      onsubmit="return confirm('¿Quitar esta confirmación? El cargo y los pagos del evento se cancelarán.');">
                                     <?= Csrf::campo() ?>
                                     <button class="btn btn-sm btn-outline-danger" title="Quitar"><i class="bi bi-x-lg"></i></button>
                                 </form>

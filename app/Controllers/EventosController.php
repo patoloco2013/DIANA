@@ -113,6 +113,7 @@ final class EventosController extends Controller
             'puntos'    => $esEdicion ? $this->puntosDe($idEvento) : [],
             'imagenes'  => $esEdicion ? $this->imagenesDe($idEvento) : [],
             'moduloEdicion' => $esEdicion ? $this->moduloDe($idEvento, (int) ($_GET['modulo'] ?? 0)) : null,
+            'disciplinas'   => $esEdicion ? $this->disciplinasParaFormulario($idEvento) : [],
             'listaEstatus'  => self::ESTATUS,
             'maxMb'     => (int) cfg('archivos.max_mb', 10),
         ]);
@@ -322,16 +323,20 @@ final class EventosController extends Controller
             $volver();
         }
 
+        // Solo se aceptan disciplinas del catálogo de este colegio (activas
+        // o ya usadas en este evento); cualquier otro id enviado se ignora.
+        $disciplinasValidas = array_column($this->disciplinasParaFormulario((int) $evento['id']), null, 'id');
         $enviados = (array) ($_POST['puntos'] ?? []);
-        foreach (array_keys(Catalogos::DISCIPLINAS) as $disciplina) {
-            $valor = $enviados[$disciplina] ?? '';
+
+        foreach ($disciplinasValidas as $disciplinaId => $disciplina) {
+            $valor = $enviados[$disciplinaId] ?? '';
             $puntos = trim((string) $valor) === '' ? 0.0 : max(0.0, (float) $valor);
 
             $existente = $modulo
-                ? Database::una('SELECT id FROM evento_puntos WHERE evento_id = ? AND modulo_id = ? AND disciplina = ?',
-                    [(int) $evento['id'], (int) $modulo['id'], $disciplina])
-                : Database::una('SELECT id FROM evento_puntos WHERE evento_id = ? AND modulo_id IS NULL AND disciplina = ?',
-                    [(int) $evento['id'], $disciplina]);
+                ? Database::una('SELECT id FROM evento_puntos WHERE evento_id = ? AND modulo_id = ? AND disciplina_id = ?',
+                    [(int) $evento['id'], (int) $modulo['id'], $disciplinaId])
+                : Database::una('SELECT id FROM evento_puntos WHERE evento_id = ? AND modulo_id IS NULL AND disciplina_id = ?',
+                    [(int) $evento['id'], $disciplinaId]);
 
             if ($puntos <= 0) {
                 if ($existente) {
@@ -343,8 +348,8 @@ final class EventosController extends Controller
                 Database::ejecutar('UPDATE evento_puntos SET puntos = ? WHERE id = ?', [$puntos, (int) $existente['id']]);
             } else {
                 Database::ejecutar(
-                    'INSERT INTO evento_puntos (colegio_id, evento_id, modulo_id, disciplina, puntos) VALUES (?, ?, ?, ?, ?)',
-                    [$this->colegioId(), (int) $evento['id'], $modulo ? (int) $modulo['id'] : null, $disciplina, $puntos]);
+                    'INSERT INTO evento_puntos (colegio_id, evento_id, modulo_id, disciplina_id, puntos) VALUES (?, ?, ?, ?, ?)',
+                    [$this->colegioId(), (int) $evento['id'], $modulo ? (int) $modulo['id'] : null, $disciplinaId, $puntos]);
             }
         }
         flash('success', $modulo ? 'Puntos DPC del módulo actualizados.' : 'Puntos DPC del evento actualizados.');
@@ -477,14 +482,29 @@ final class EventosController extends Controller
         return Database::una('SELECT * FROM evento_modulos WHERE id = ? AND evento_id = ?', [$moduloId, $eventoId]);
     }
 
-    /** Puntos indexados: [''|modulo_id][disciplina] => puntos. */
+    /** Puntos indexados: [''|modulo_id][disciplina_id] => puntos. */
     private function puntosDe(int $eventoId): array
     {
         $mapa = [];
         foreach (Database::todas('SELECT * FROM evento_puntos WHERE evento_id = ?', [$eventoId]) as $p) {
-            $mapa[$p['modulo_id'] === null ? '' : (string) $p['modulo_id']][$p['disciplina']] = $p['puntos'];
+            $mapa[$p['modulo_id'] === null ? '' : (string) $p['modulo_id']][(int) $p['disciplina_id']] = $p['puntos'];
         }
         return $mapa;
+    }
+
+    /**
+     * Disciplinas que se ofrecen para capturar puntos en este evento: las
+     * activas del colegio, más cualquiera ya usada aquí aunque después se
+     * haya desactivado (para no perder de vista puntos ya otorgados).
+     */
+    private function disciplinasParaFormulario(int $eventoId): array
+    {
+        return Database::todas(
+            'SELECT DISTINCT d.* FROM disciplinas d
+             WHERE d.colegio_id = ?
+               AND (d.activo = 1 OR d.id IN (SELECT disciplina_id FROM evento_puntos WHERE evento_id = ?))
+             ORDER BY d.orden, d.nombre',
+            [$this->colegioId(), $eventoId]);
     }
 
     private function imagenesDe(int $eventoId): array

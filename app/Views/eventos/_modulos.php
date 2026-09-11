@@ -1,6 +1,5 @@
 <?php
-/** Pestaña Módulos y DPC. Variables: $evento, $modulos, $puntos, $moduloEdicion */
-use Diana\Core\Catalogos;
+/** Pestaña Módulos y DPC. Variables: $evento, $modulos, $puntos, $moduloEdicion, $disciplinas */
 use Diana\Core\Csrf;
 
 $idEvento = (int) $evento['id'];
@@ -101,24 +100,28 @@ $siguienteOrden = count($modulos) + 1;
                         </form>
                     </div>
 
-                    <?php if ($porModulo): ?>
-                    <details class="mt-3" <?= array_sum(array_map('floatval', $puntosMod)) > 0 ? '' : '' ?>>
+                    <?php if ($porModulo && $disciplinas): ?>
+                    <details class="mt-3">
                         <summary class="small text-primary" style="cursor: pointer;">Puntos DPC por disciplina de este módulo</summary>
                         <form class="mt-2" method="post" action="<?= e(url('eventos/guardarPuntos/' . $idEvento . '/' . (int) $mod['id'])) ?>">
                             <?= Csrf::campo() ?>
                             <div class="row g-2">
-                                <?php foreach (Catalogos::DISCIPLINAS as $clave => $etiqueta): ?>
+                                <?php foreach ($disciplinas as $d): ?>
                                 <div class="col-6 col-md-4">
-                                    <label class="form-label small mb-1" for="pm<?= (int) $mod['id'] ?>_<?= $clave ?>"><?= e($etiqueta) ?></label>
-                                    <input class="form-control form-control-sm" id="pm<?= (int) $mod['id'] ?>_<?= $clave ?>"
-                                           name="puntos[<?= $clave ?>]" type="number" step="0.5" min="0" placeholder="0"
-                                           value="<?= isset($puntosMod[$clave]) && (float) $puntosMod[$clave] > 0 ? e((string) (float) $puntosMod[$clave]) : '' ?>">
+                                    <label class="form-label small mb-1" for="pm<?= (int) $mod['id'] ?>_<?= (int) $d['id'] ?>">
+                                        <?= e($d['nombre']) ?><?= (int) $d['activo'] === 0 ? ' <span class="text-muted">(inactiva)</span>' : '' ?>
+                                    </label>
+                                    <input class="form-control form-control-sm" id="pm<?= (int) $mod['id'] ?>_<?= (int) $d['id'] ?>"
+                                           name="puntos[<?= (int) $d['id'] ?>]" type="number" step="0.5" min="0" placeholder="0"
+                                           value="<?= isset($puntosMod[$d['id']]) && (float) $puntosMod[$d['id']] > 0 ? e((string) (float) $puntosMod[$d['id']]) : '' ?>">
                                 </div>
                                 <?php endforeach; ?>
                             </div>
                             <button class="btn btn-outline-primary btn-sm mt-2" type="submit">Guardar puntos del módulo</button>
                         </form>
                     </details>
+                    <?php elseif ($porModulo): ?>
+                    <p class="small text-muted mt-3 mb-0">No hay disciplinas activas. <a href="<?= e(url('disciplinas')) ?>">Agregue alguna en el catálogo</a>.</p>
                     <?php endif; ?>
                 </div>
             </div>
