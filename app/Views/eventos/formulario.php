@@ -161,23 +161,32 @@ $conteo = ['modulos' => count($modulos), 'imagenes' => count($imagenes)];
 
                 <?php if ($esEdicion && $esquema === 'evento'): ?>
                 <hr class="my-4">
-                <h2 class="h6 fw-semibold mb-1">Puntos DPC por disciplina</h2>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                    <h2 class="h6 fw-semibold mb-0">Puntos DPC por disciplina</h2>
+                    <a class="small" href="<?= e(url('disciplinas')) ?>"><i class="bi bi-gear me-1"></i>Catálogo de disciplinas</a>
+                </div>
                 <p class="small text-muted">Puntos que otorga el evento completo. Para repartirlos por día o sesión, cambie el esquema a «por módulo».</p>
+                <?php if (!$disciplinas): ?>
+                    <p class="text-muted">No hay disciplinas activas. <a href="<?= e(url('disciplinas')) ?>">Agregue alguna en el catálogo</a>.</p>
+                <?php else: ?>
                 <form method="post" action="<?= e(url('eventos/guardarPuntos/' . $idEvento)) ?>">
                     <?= Csrf::campo() ?>
                     <?php $puntosEvento = $puntos[''] ?? []; ?>
                     <div class="row g-2">
-                        <?php foreach (Catalogos::DISCIPLINAS as $clave => $etiqueta): ?>
+                        <?php foreach ($disciplinas as $d): ?>
                         <div class="col-6 col-md-4 col-xl-3">
-                            <label class="form-label small mb-1" for="pt_<?= $clave ?>"><?= e($etiqueta) ?></label>
-                            <input class="form-control form-control-sm" id="pt_<?= $clave ?>" name="puntos[<?= $clave ?>]"
+                            <label class="form-label small mb-1" for="pt_<?= (int) $d['id'] ?>">
+                                <?= e($d['nombre']) ?><?= (int) $d['activo'] === 0 ? ' <span class="text-muted">(inactiva)</span>' : '' ?>
+                            </label>
+                            <input class="form-control form-control-sm" id="pt_<?= (int) $d['id'] ?>" name="puntos[<?= (int) $d['id'] ?>]"
                                    type="number" step="0.5" min="0" placeholder="0"
-                                   value="<?= isset($puntosEvento[$clave]) && (float) $puntosEvento[$clave] > 0 ? e((string) (float) $puntosEvento[$clave]) : '' ?>">
+                                   value="<?= isset($puntosEvento[$d['id']]) && (float) $puntosEvento[$d['id']] > 0 ? e((string) (float) $puntosEvento[$d['id']]) : '' ?>">
                         </div>
                         <?php endforeach; ?>
                     </div>
                     <button class="btn btn-outline-primary btn-sm mt-3" type="submit"><i class="bi bi-check-lg me-1"></i>Guardar puntos DPC</button>
                 </form>
+                <?php endif; ?>
                 <?php elseif ($esEdicion): ?>
                 <hr class="my-4">
                 <p class="small text-muted mb-0">

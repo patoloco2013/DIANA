@@ -88,7 +88,8 @@ final class ColegiosController extends Controller
                         'INSERT INTO colegios (clave, nombre, nombre_corto, ciudad, email_contacto, telefono, color_primario, logo_url, activo)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         array_values($datos));
-                    flash('success', 'Colegio dado de alta.');
+                    DisciplinasController::sembrar(Database::ultimoId());
+                    flash('success', 'Colegio dado de alta con su catálogo inicial de disciplinas DPC.');
                 }
                 redirigir('colegios');
             }

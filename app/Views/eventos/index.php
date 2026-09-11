@@ -8,6 +8,9 @@
                    placeholder="Nombre, expositor o sede" style="min-width: 220px;">
             <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
         </form>
+        <a class="btn btn-outline-secondary text-nowrap" href="<?= e(url('disciplinas')) ?>">
+            <i class="bi bi-mortarboard me-1"></i>Disciplinas DPC
+        </a>
         <a class="btn btn-primary text-nowrap" href="<?= e(url('eventos/crear')) ?>">
             <i class="bi bi-calendar-plus me-1"></i>Nuevo
         </a>

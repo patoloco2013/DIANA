@@ -212,20 +212,39 @@ CREATE TABLE evento_modulos (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Catálogo de disciplinas para puntos DPC, administrado por cada colegio.
+-- Nunca se elimina (solo se desactiva): borrarla rompería los puntos ya
+-- otorgados en eventos pasados. DisciplinasController::SEMILLA la puebla
+-- al dar de alta un colegio nuevo; desde ahí se agregan o renombran más.
+-- ---------------------------------------------------------------------
+CREATE TABLE disciplinas (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id INT UNSIGNED NOT NULL,
+    nombre     VARCHAR(100) NOT NULL,
+    orden      SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    activo     TINYINT(1)   NOT NULL DEFAULT 1,
+    creado_en  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_disciplinas_colegio_nombre (colegio_id, nombre),
+    INDEX idx_disciplinas_colegio (colegio_id, activo, orden),
+    CONSTRAINT fk_disc_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Puntos DPC por disciplina. modulo_id NULL = puntos de todo el evento;
 -- con modulo_id = puntos de ese módulo (esquema_puntos = 'modulo').
 -- ---------------------------------------------------------------------
 CREATE TABLE evento_puntos (
-    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    colegio_id INT UNSIGNED NOT NULL,
-    evento_id  INT UNSIGNED NOT NULL,
-    modulo_id  INT UNSIGNED NULL,
-    disciplina VARCHAR(30)  NOT NULL,                 -- clave de Catalogos::DISCIPLINAS
-    puntos     DECIMAL(6,2) NOT NULL DEFAULT 0,
+    id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id    INT UNSIGNED NOT NULL,
+    evento_id     INT UNSIGNED NOT NULL,
+    modulo_id     INT UNSIGNED NULL,
+    disciplina_id INT UNSIGNED NOT NULL,
+    puntos        DECIMAL(6,2) NOT NULL DEFAULT 0,
     INDEX idx_puntos_evento (evento_id, modulo_id),
-    CONSTRAINT fk_epun_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
-    CONSTRAINT fk_epun_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id) ON DELETE CASCADE,
-    CONSTRAINT fk_epun_modulo  FOREIGN KEY (modulo_id)  REFERENCES evento_modulos(id) ON DELETE CASCADE
+    CONSTRAINT fk_epun_colegio    FOREIGN KEY (colegio_id)    REFERENCES colegios(id),
+    CONSTRAINT fk_epun_evento     FOREIGN KEY (evento_id)     REFERENCES eventos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_epun_modulo     FOREIGN KEY (modulo_id)     REFERENCES evento_modulos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_epun_disciplina FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -266,27 +285,36 @@ CREATE TABLE evento_imagenes (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- Asistencias / registro a eventos. Antes: asistencia(socio, idev...)
+-- Asistencias a eventos, en dos fases:
+--   1. Confirmación (alta aquí): se genera el cargo, asistio = 0.
+--   2. Asistencia (registro/asistencia): al pasar lista se marca asistio = 1,
+--      ahí se otorgan los puntos_dpc (no antes: solo se ganan si asistió).
 -- socio_id NULL = asistente del público en general (nombre en asistente).
 -- ---------------------------------------------------------------------
 CREATE TABLE asistencias (
-    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    colegio_id  INT UNSIGNED NOT NULL,
-    evento_id   INT UNSIGNED NOT NULL,
-    socio_id    INT UNSIGNED NULL,
-    asistente   VARCHAR(150) NULL,                    -- nombre si no es socio
-    email       VARCHAR(120) NULL,                    -- para enviarle el enlace en línea
-    tipo        ENUM('socio','publico') NOT NULL DEFAULT 'socio',
-    categoria   VARCHAR(20)  NOT NULL DEFAULT 'socio',-- categoría de precio aplicada
-    modalidad   ENUM('presencial','linea') NOT NULL DEFAULT 'presencial',
-    puntos_dpc  DECIMAL(6,2) NOT NULL DEFAULT 0,
-    creado_por  INT UNSIGNED NULL,
-    creado_en   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    colegio_id    INT UNSIGNED NOT NULL,
+    evento_id     INT UNSIGNED NOT NULL,
+    socio_id      INT UNSIGNED NULL,
+    asistente     VARCHAR(150) NULL,                  -- nombre si no es socio
+    email         VARCHAR(120) NULL,                  -- para enviarle el enlace en línea
+    tipo          ENUM('socio','publico') NOT NULL DEFAULT 'socio',
+    categoria     VARCHAR(20)  NOT NULL DEFAULT 'socio',-- categoría de precio aplicada
+    modalidad     ENUM('presencial','linea') NOT NULL DEFAULT 'presencial',
+    asistio       TINYINT(1)   NOT NULL DEFAULT 0,     -- fase 2: pasó lista
+    fecha_asistio DATETIME NULL,
+    lugar         VARCHAR(50)  NULL,                  -- mesa/lugar asignado al pasar lista
+    comentarios   VARCHAR(255) NULL,
+    puntos_dpc    DECIMAL(6,2) NOT NULL DEFAULT 0,     -- otorgados al marcar asistio = 1
+    creado_por    INT UNSIGNED NULL,
+    asistio_por   INT UNSIGNED NULL,
+    creado_en     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_asistencia_evento_socio (evento_id, socio_id),
     INDEX idx_asistencias_colegio (colegio_id, evento_id),
-    CONSTRAINT fk_asist_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id),
-    CONSTRAINT fk_asist_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id),
-    CONSTRAINT fk_asist_socio   FOREIGN KEY (socio_id)   REFERENCES socios(id)
+    CONSTRAINT fk_asist_colegio  FOREIGN KEY (colegio_id)  REFERENCES colegios(id),
+    CONSTRAINT fk_asist_evento   FOREIGN KEY (evento_id)   REFERENCES eventos(id),
+    CONSTRAINT fk_asist_socio    FOREIGN KEY (socio_id)    REFERENCES socios(id),
+    CONSTRAINT fk_asist_asist_por FOREIGN KEY (asistio_por) REFERENCES usuarios(id)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -334,3 +362,23 @@ INSERT INTO roles (nombre, descripcion, permisos) VALUES
 -- colegio_id NULL = superadmin con acceso a todos los colegios.
 INSERT INTO usuarios (colegio_id, rol_id, usuario, password_hash, nombre, email) VALUES
 (NULL, 1, 'admin', '$2y$12$.AEHDS8z58806dlpJ74TJeNiS6PGfOJm2TmLo4ilAsd3ZGV1bdqSC', 'Administrador DIANA', NULL);
+
+-- Catálogo inicial de disciplinas DPC para cada colegio (editable después
+-- desde Eventos → Disciplinas; ver DisciplinasController::SEMILLA).
+INSERT INTO disciplinas (colegio_id, nombre, orden, activo)
+SELECT c.id, x.nombre, x.orden, 1
+FROM colegios c
+CROSS JOIN (
+    SELECT 1 AS orden, 'Fiscal' AS nombre UNION ALL
+    SELECT 2, 'Auditoría' UNION ALL
+    SELECT 3, 'Contabilidad' UNION ALL
+    SELECT 4, 'Finanzas' UNION ALL
+    SELECT 5, 'Ética profesional' UNION ALL
+    SELECT 6, 'Administración' UNION ALL
+    SELECT 7, 'Costos' UNION ALL
+    SELECT 8, 'Legal y laboral' UNION ALL
+    SELECT 9, 'Tecnologías de información' UNION ALL
+    SELECT 10, 'Sector gubernamental' UNION ALL
+    SELECT 11, 'Docencia y educación' UNION ALL
+    SELECT 12, 'Otras disciplinas'
+) x;
