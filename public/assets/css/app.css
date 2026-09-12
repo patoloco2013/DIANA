@@ -517,39 +517,74 @@ a {
 .diana-kpi-neutro { border-left: 3px solid #94a3b8; }
 .diana-kpi-neutro .diana-kpi-icono { background: #f1f5f9; color: #475569; }
 
-/* Tarjetas de eventos próximos (tablero) */
-.diana-evento-card-img {
-    width: 100%;
-    height: 120px;
+/* Filtro rápido de eventos próximos (tablero) */
+.diana-buscador-eventos {
+    position: relative;
+}
+
+.diana-buscador-eventos .bi-search {
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+.diana-buscador-eventos input {
+    padding-left: 1.8rem;
+    min-width: 200px;
+}
+
+.diana-filtro-eventos .btn-outline-secondary.active {
+    background: var(--diana-primario);
+    border-color: var(--diana-primario);
+    color: var(--diana-primario-texto);
+}
+
+/* Lista de eventos próximos (tablero): información a la izquierda, imagen a la derecha */
+.diana-evento-fila {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.diana-evento-fila-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.diana-evento-fila-img {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 96px;
+    border-radius: 10px;
     object-fit: cover;
-    border-radius: 12px 12px 0 0;
+    align-self: center;
 }
 
-.diana-evento-card-img-grande {
-    height: 220px;
+@media (min-width: 768px) {
+    .diana-evento-fila-img {
+        width: 130px;
+        height: 130px;
+    }
 }
 
-.diana-evento-card-img-vacia {
+.diana-evento-fila-img-vacia {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: 1.6rem;
     color: #9ca3af;
     background: var(--diana-primario-suave);
 }
 
 .diana-badge-cuando {
-    position: absolute;
-    top: 0.6rem;
-    right: 0.6rem;
     background: var(--diana-primario);
     color: var(--diana-primario-texto);
     font-weight: 600;
-}
-
-.diana-evento-destacado {
-    border: 1px solid var(--diana-primario);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
 
 .diana-progreso-cupo {
