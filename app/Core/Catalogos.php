@@ -91,6 +91,17 @@ final class Catalogos
         'otro'            => 'Otro',
     ];
 
+    /** Tipos de archivo adjunto para eventos (distintos de la galería de imágenes). */
+    public const TIPOS_DOCUMENTO_EVENTO = [
+        'convocatoria'       => 'Convocatoria',
+        'programa'           => 'Programa / agenda',
+        'presentacion'       => 'Presentación',
+        'lista_asistencia'   => 'Lista de asistencia',
+        'memoria_fotografica'=> 'Memoria fotográfica',
+        'constancia_formato' => 'Formato de constancia',
+        'otro'               => 'Otro',
+    ];
+
     /** c_RegimenFiscal (SAT). */
     public const REGIMEN_FISCAL = [
         '601' => 'General de Ley Personas Morales',

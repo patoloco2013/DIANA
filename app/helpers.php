@@ -174,6 +174,19 @@ function dias_relativo(string $fecha): string
     };
 }
 
+/** Ícono + color de Bootstrap Icons según la extensión de un archivo adjunto. */
+function icono_archivo(string $extension): string
+{
+    return match (strtolower($extension)) {
+        'pdf' => 'bi-file-earmark-pdf text-danger',
+        'doc', 'docx' => 'bi-file-earmark-word text-primary',
+        'xls', 'xlsx' => 'bi-file-earmark-excel text-success',
+        'ppt', 'pptx' => 'bi-file-earmark-ppt text-warning',
+        'jpg', 'jpeg', 'png', 'webp' => 'bi-file-earmark-image text-info',
+        default => 'bi-file-earmark text-secondary',
+    };
+}
+
 /** "Vie 20 sep" a partir de YYYY-MM-DD, sin depender del locale del servidor. */
 function fecha_evento(string $fecha): string
 {

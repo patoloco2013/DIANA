@@ -19,8 +19,9 @@ $pestanas = [
     'precios'   => ['Precios',   'bi-tags',           $esEdicion],
     'modulos'   => ['Módulos y DPC', 'bi-list-ol',    $esEdicion],
     'imagenes'  => ['Imágenes',  'bi-images',         $esEdicion],
+    'archivos'  => ['Archivos',  'bi-paperclip',      $esEdicion],
 ];
-$conteo = ['modulos' => count($modulos), 'imagenes' => count($imagenes)];
+$conteo = ['modulos' => count($modulos), 'imagenes' => count($imagenes), 'archivos' => count($documentos)];
 ?>
 
 <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
@@ -205,6 +206,9 @@ $conteo = ['modulos' => count($modulos), 'imagenes' => count($imagenes)];
             </div>
             <div class="tab-pane fade <?= $pestana === 'imagenes' ? 'show active' : '' ?>" id="tab-imagenes" role="tabpanel">
                 <?php require __DIR__ . '/_imagenes.php'; ?>
+            </div>
+            <div class="tab-pane fade <?= $pestana === 'archivos' ? 'show active' : '' ?>" id="tab-archivos" role="tabpanel">
+                <?php require __DIR__ . '/_archivos.php'; ?>
             </div>
             <?php endif; ?>
         </div>

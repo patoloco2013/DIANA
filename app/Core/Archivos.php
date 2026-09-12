@@ -15,17 +15,34 @@ use RuntimeException;
  */
 final class Archivos
 {
-    /** extensión permitida => tipos MIME reales aceptados para ella */
+    /**
+     * Extensión permitida => tipos MIME reales aceptados para ella.
+     *
+     * Word/Excel/PowerPoint modernos (.docx/.xlsx/.pptx) son en realidad un
+     * ZIP por dentro, y según la versión de libmagic del servidor, finfo los
+     * reporta como su MIME de Office o simplemente como "application/zip".
+     * Se aceptan ambos: sigue rechazando cualquier archivo que no sea un ZIP
+     * de verdad (un script renombrado, por ejemplo), aunque no distinga el
+     * subtipo exacto de Office en esos casos.
+     */
     private const TIPOS = [
         'pdf'  => ['application/pdf'],
         'jpg'  => ['image/jpeg'],
         'jpeg' => ['image/jpeg'],
         'png'  => ['image/png'],
         'webp' => ['image/webp'],
+        'doc'  => ['application/msword', 'application/x-ole-storage', 'application/CDFV2', 'application/CDFV2-corrupt'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+        'xls'  => ['application/vnd.ms-excel', 'application/x-ole-storage', 'application/CDFV2', 'application/CDFV2-corrupt'],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip'],
+        'ppt'  => ['application/vnd.ms-powerpoint', 'application/x-ole-storage', 'application/CDFV2', 'application/CDFV2-corrupt'],
+        'pptx' => ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip'],
     ];
 
     public const EXT_IMAGEN    = ['jpg', 'jpeg', 'png', 'webp'];
     public const EXT_DOCUMENTO = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+    /** Archivos adjuntos de eventos: además de PDF/imágenes, admite Office. */
+    public const EXT_EVENTO_DOCUMENTO = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'];
 
     public static function rutaBase(): string
     {

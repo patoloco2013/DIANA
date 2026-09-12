@@ -18,7 +18,7 @@ final class EventosController extends Controller
 {
     public const MODULO = 'eventos';
 
-    private const PESTANAS = ['generales', 'precios', 'modulos', 'imagenes'];
+    private const PESTANAS = ['generales', 'precios', 'modulos', 'imagenes', 'archivos'];
     private const ESTATUS  = ['borrador', 'publicado', 'cerrado', 'cancelado'];
 
     // ------------------------------------------------------------------
@@ -112,6 +112,7 @@ final class EventosController extends Controller
             'modulos'   => $esEdicion ? $this->modulosDe($idEvento) : [],
             'puntos'    => $esEdicion ? $this->puntosDe($idEvento) : [],
             'imagenes'  => $esEdicion ? $this->imagenesDe($idEvento) : [],
+            'documentos'    => $esEdicion ? $this->archivosDe($idEvento) : [],
             'moduloEdicion' => $esEdicion ? $this->moduloDe($idEvento, (int) ($_GET['modulo'] ?? 0)) : null,
             'disciplinas'   => $esEdicion ? $this->disciplinasParaFormulario($idEvento) : [],
             'listaEstatus'  => self::ESTATUS,
@@ -434,6 +435,66 @@ final class EventosController extends Controller
     }
 
     // ------------------------------------------------------------------
+    // Archivos adjuntos (convocatoria, programa, presentaciones...)
+    // ------------------------------------------------------------------
+    public function subirArchivo(string $id = '0'): void
+    {
+        $evento = $this->eventoOAbortar($id);
+        $volver = fn() => redirigir('eventos/editar/' . (int) $evento['id'], ['pestana' => 'archivos']);
+        if (!$this->esPost()) {
+            $volver();
+        }
+        $tipo = (string) $this->post('tipo', '');
+        try {
+            if (!isset(Catalogos::TIPOS_DOCUMENTO_EVENTO[$tipo])) {
+                throw new RuntimeException('Seleccione el tipo de archivo.');
+            }
+            if (!Archivos::enviado($_FILES['archivo'] ?? null)) {
+                throw new RuntimeException('Seleccione un archivo.');
+            }
+            $cid = $this->colegioId();
+            $info = Archivos::guardar($_FILES['archivo'], "eventos/{$cid}/{$evento['id']}/documentos", Archivos::EXT_EVENTO_DOCUMENTO);
+            Database::ejecutar(
+                'INSERT INTO evento_documentos (colegio_id, evento_id, tipo, descripcion, archivo, nombre_original, mime, tamano, subido_por)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$cid, (int) $evento['id'], $tipo, $this->post('descripcion'),
+                 $info['archivo'], $info['nombre_original'], $info['mime'], $info['tamano'], $this->usuarioId()]);
+            flash('success', 'Archivo agregado.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        $volver();
+    }
+
+    /** Ver (o descargar con ?descargar=1) un archivo adjunto del evento. */
+    public function archivo(string $id = '0', string $archivoId = '0'): void
+    {
+        $evento = $this->eventoOAbortar($id);
+        $doc = Database::una('SELECT * FROM evento_documentos WHERE id = ? AND evento_id = ? AND colegio_id = ?',
+            [(int) $archivoId, (int) $evento['id'], $this->colegioId()]);
+        if (!$doc) {
+            http_response_code(404);
+            exit('Archivo no encontrado.');
+        }
+        Archivos::enviar($doc['archivo'], $doc['mime'], $doc['nombre_original'], empty($_GET['descargar']));
+    }
+
+    public function eliminarArchivo(string $id = '0', string $archivoId = '0'): void
+    {
+        $evento = $this->eventoOAbortar($id);
+        if ($this->esPost()) {
+            $doc = Database::una('SELECT * FROM evento_documentos WHERE id = ? AND evento_id = ? AND colegio_id = ?',
+                [(int) $archivoId, (int) $evento['id'], $this->colegioId()]);
+            if ($doc) {
+                Database::ejecutar('DELETE FROM evento_documentos WHERE id = ?', [(int) $doc['id']]);
+                Archivos::eliminar($doc['archivo']);
+                flash('success', 'Archivo eliminado.');
+            }
+        }
+        redirigir('eventos/editar/' . (int) $evento['id'], ['pestana' => 'archivos']);
+    }
+
+    // ------------------------------------------------------------------
     // Auxiliares
     // ------------------------------------------------------------------
     /** Modalidades de asistencia posibles según la modalidad del evento. */
@@ -512,6 +573,15 @@ final class EventosController extends Controller
         return Database::todas(
             'SELECT * FROM evento_imagenes WHERE evento_id = ? ORDER BY principal DESC, orden, id',
             [$eventoId]);
+    }
+
+    private function archivosDe(int $eventoId): array
+    {
+        return Database::todas(
+            'SELECT d.*, u.nombre AS subido_por_nombre
+             FROM evento_documentos d LEFT JOIN usuarios u ON u.id = d.subido_por
+             WHERE d.evento_id = ? AND d.colegio_id = ? ORDER BY d.creado_en DESC, d.id DESC',
+            [$eventoId, $this->colegioId()]);
     }
 
     private function imagenDe(int $eventoId, int $imagenId): ?array
