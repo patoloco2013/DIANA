@@ -16,7 +16,7 @@ final class DashboardController extends Controller
         $cid = $this->colegioId();
 
         $proximosEventos = Database::todas(
-            "SELECT e.id, e.nombre, e.fecha_inicio, e.hora_inicio, e.sede, e.modalidad, e.cupo,
+            "SELECT e.id, e.nombre, e.fecha_inicio, e.hora_inicio, e.sede, e.modalidad, e.cupo, e.expositores,
                     (SELECT COALESCE(SUM(p.puntos), 0) FROM evento_puntos p WHERE p.evento_id = e.id) AS puntos_dpc,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id) AS confirmados,
                     (SELECT COUNT(*) FROM asistencias a WHERE a.evento_id = e.id AND a.asistio = 1) AS asistieron,
@@ -38,17 +38,10 @@ final class DashboardController extends Controller
                  WHERE e.colegio_id = ? AND e.estatus = 'publicado' AND e.fecha_inicio >= CURDATE()", [$cid]),
         ];
 
-        $ultimosPagos = Database::todas(
-            "SELECT c.fecha, c.importe, c.concepto, s.nombre_completo AS socio
-             FROM cuentas c JOIN socios s ON s.id = c.socio_id
-             WHERE c.colegio_id = ? AND c.tipo = 'pago' AND c.estatus = 'vigente'
-             ORDER BY c.id DESC LIMIT 6", [$cid]);
-
         $this->vista('dashboard/index', [
             'titulo' => 'Inicio',
             'kpis' => $kpis,
             'proximosEventos' => $proximosEventos,
-            'ultimosPagos' => $ultimosPagos,
         ]);
     }
 }

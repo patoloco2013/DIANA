@@ -91,6 +91,9 @@ $iconosModalidad = ['presencial' => 'bi-geo-alt', 'linea' => 'bi-camera-video', 
                         <?php if ((float) $ev['puntos_dpc'] > 0): ?>
                             <span class="badge text-bg-light border ms-1"><?= e(number_format((float) $ev['puntos_dpc'], 2)) ?> pts DPC</span>
                         <?php endif; ?>
+                        <?php if ($ev['expositores']): ?>
+                            <div><i class="bi bi-person-badge me-1"></i><?= e($ev['expositores']) ?></div>
+                        <?php endif; ?>
                     </div>
                     <div class="d-flex flex-wrap justify-content-between small gap-2 mb-1" style="max-width: 420px;">
                         <span><i class="bi bi-clipboard2-check text-muted me-1"></i>Confirmados <strong><?= (int) $ev['confirmados'] ?></strong><?= $cupo ? ' / ' . $cupo : '' ?></span>
@@ -156,28 +159,3 @@ $iconosModalidad = ['presencial' => 'bi-geo-alt', 'linea' => 'bi-camera-video', 
 })();
 </script>
 <?php endif; ?>
-
-<div class="row g-3">
-    <div class="col-12 col-lg-6">
-        <div class="card">
-            <div class="card-header bg-white fw-semibold">Últimos pagos</div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead><tr><th>Fecha</th><th>Socio</th><th class="text-end">Importe</th></tr></thead>
-                    <tbody>
-                    <?php if (!$ultimosPagos): ?>
-                        <tr><td colspan="3" class="text-muted text-center py-4">Sin pagos registrados.</td></tr>
-                    <?php endif; ?>
-                    <?php foreach ($ultimosPagos as $p): ?>
-                        <tr>
-                            <td><?= e(fecha_corta($p['fecha'])) ?></td>
-                            <td><?= e($p['socio']) ?><div class="small text-muted"><?= e($p['concepto']) ?></div></td>
-                            <td class="text-end"><?= e(dinero($p['importe'])) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
