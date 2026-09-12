@@ -12,7 +12,7 @@ DIANA es la reescritura desde cero del sistema SIE (`admin.php` →
 
 | Módulo | Descripción |
 | --- | --- |
-| Dashboard | Indicadores: socios activos, eventos próximos, cartera y cobranza del mes |
+| Dashboard | Enfocado en los próximos eventos (ordenados por cercanía): KPIs de próximo evento, eventos próximos, confirmados y socios activos; lista de eventos con imagen, confirmados/asistieron y filtro rápido por nombre o modalidad |
 | Socios | Expediente por colegio en pestañas: datos generales (nombre y apellidos, tipo, género, cumpleaños, límite de crédito, cuota anual, foto), adicionales (domicilio, teléfonos, correos), **documentos digitales** (PDF/imágenes: acta, cédula, CV…) y **perfiles fiscales** múltiples (RFC, régimen y uso CFDI, C.P.) para facturación |
 | Eventos | Presencial/en línea/híbrido con enlace de sesión (Webex, Zoom, Teams…), galería de imágenes (una principal + opcionales), **archivos adjuntos** (convocatoria, programa, presentaciones, listas… en PDF, Word, Excel, PowerPoint o imagen), precios por categoría de asistente y por modalidad, **módulos** (uno por día o sesión, con generador automático) y **puntos DPC por disciplina** —a nivel evento o por módulo— tomados de un **catálogo de disciplinas propio de cada colegio** (se agregan o renombran, nunca se eliminan) |
 | Registro | Dos fases: **1. Confirmaciones** (alta del asistente, cargo automático según su categoría/modalidad, pagos ligados al evento) y **2. Asistencia** (pasar lista: solo al marcar asistencia se otorgan los puntos DPC, con lugar/mesa y comentarios) |
@@ -20,6 +20,7 @@ DIANA es la reescritura desde cero del sistema SIE (`admin.php` →
 | Reportes | Saldos, morosidad, cobranza por periodo y resultados por evento |
 | Usuarios | Staff con roles y permisos por módulo (RBAC) |
 | Colegios | Alta y configuración de cada colegio (solo superadmin) |
+| Configuración | Por colegio: **Fiscal** (datos del emisor y Certificado de Sello Digital, validado con OpenSSL al cargarlo), **Correo** (SMTP con prueba de conexión), **SAT PAC** (proveedor de timbrado, ej. Timbox) y **Constancia** (plantilla general con marcadores). Guarda la configuración; el timbrado, envío de correo y generación de PDF en sí son módulos aparte, pendientes de construir |
 
 ## Requisitos
 
@@ -51,12 +52,23 @@ inmediato** en Usuarios → editar.
 anterior, aplique en orden los scripts de `database/migraciones/` en lugar de
 volver a ejecutar el esquema completo.
 
-**Archivos subidos (fotos y documentos de socios):** se guardan en la carpeta
-`archivos.ruta` de la configuración (por omisión `storage/uploads/`, fuera de
-`public/`) y se entregan a través de la aplicación tras verificar sesión y
-colegio. PHP debe permitir el tamaño configurado: `upload_max_filesize` y
-`post_max_size` (php.ini o `.user.ini`) deben ser mayores o iguales a
-`archivos.max_mb`.
+**Archivos subidos (fotos y documentos de socios y eventos):** se guardan en
+la carpeta `archivos.ruta` de la configuración (por omisión
+`storage/uploads/`, fuera de `public/`) y se entregan a través de la
+aplicación tras verificar sesión y colegio. PHP debe permitir el tamaño
+configurado: `upload_max_filesize` y `post_max_size` (php.ini o `.user.ini`)
+deben ser mayores o iguales a `archivos.max_mb`.
+
+**Clave de cifrado (`app.clave_cifrado`):** obligatoria para usar
+Configuración → Fiscal/Correo/SAT PAC, que guardan secretos (contraseña del
+sello digital, del SMTP y del PAC, y el contenido de los propios archivos
+.cer/.key) cifrados con AES-256-GCM. Genere la suya, propia de esta
+instalación — nunca reutilice una de otra instalación ni la suba a un
+repositorio:
+```bash
+php -r "echo base64_encode(random_bytes(32));"
+```
+Si la clave se pierde o se cambia, todo lo ya cifrado deja de poder leerse.
 
 ## Despliegue
 
@@ -132,12 +144,20 @@ Ruteo por convención: `/socios/editar/5` → `SociosController::editar('5')`.
 | Credenciales de BD hardcodeadas por colegio en `con2.php` | `config/config.php` fuera del repo; colegios en BD |
 | Sin límite de intentos de login | Bloqueo temporal tras N intentos fallidos + bitácora |
 | `error_reporting(0)` global | Errores visibles en desarrollo, registrados en producción |
+| Contraseñas/llaves de terceros en código o en claro (SMTP, PAC) | Cifradas con AES-256-GCM (`Diana\Core\Cifrado`); la clave vive solo en `config/config.php`, nunca en la BD ni en el repo |
 
 ## Pendientes conocidos
 
-- Facturación CFDI (integración con PAC): el SIE la tiene acoplada; aquí se
-  dejará como módulo aparte cuando se defina el PAC.
+- Facturación CFDI: **Configuración → Fiscal/SAT PAC** ya guarda y valida los
+  datos (CSD verificado con OpenSSL, credenciales del PAC cifradas), pero la
+  integración en sí —generar el XML 4.0, sellarlo con el CSD y timbrarlo con
+  el PAC— es un módulo aparte, aún sin construir.
+- Envío de correos: **Configuración → Correo** ya guarda y prueba la conexión
+  SMTP, pero el envío transaccional (recordatorios de cobranza, confirmaciones
+  de registro) es un módulo aparte, aún sin construir.
+- Generación de constancias en PDF: **Configuración → Constancia** ya guarda
+  la plantilla (texto con marcadores, orientación, logo), pero la generación
+  del PDF en sí es un módulo aparte, aún sin construir.
 - Migración de datos del SIE: los esquemas están mapeados
   (`socios`, `eventos`, `cuentas`, `asistencia` → ver `database/schema.sql`);
   falta el script ETL por colegio.
-- Envío de correos (recordatorios de cobranza / confirmaciones de registro).

@@ -21,6 +21,16 @@ return [
         // funciona en cualquier hosting. Verifiquelo antes de activarlo.
         'urls_amigables' => false,
         'zona_horaria' => 'America/Mexico_City',
+
+        // Clave para cifrar secretos por colegio (contraseña del SMTP, del
+        // PAC y de la llave privada del sello digital, y el contenido de
+        // los propios archivos .cer/.key). OBLIGATORIA para usar
+        // Configuracion -> Fiscal/Correo/SAT PAC. Genere la suya, propia de
+        // esta instalacion, y NUNCA la comparta ni la suba a un repositorio:
+        //   php -r "echo base64_encode(random_bytes(32));"
+        // Si se pierde o se cambia, todo lo ya cifrado deja de poder leerse
+        // y habra que volver a capturarlo.
+        'clave_cifrado' => '',
     ],
 
     // Una sola base de datos para todos los colegios (multi-colegio por colegio_id).

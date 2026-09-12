@@ -367,6 +367,84 @@ CREATE TABLE cuentas (
     CONSTRAINT fk_cuentas_evento  FOREIGN KEY (evento_id)  REFERENCES eventos(id)
 ) ENGINE=InnoDB;
 
+-- =====================================================================
+-- Configuración por colegio: una fila por colegio en cada tabla (upsert
+-- por colegio_id). Todo secreto (contraseñas, API keys, y el contenido de
+-- los archivos .cer/.key) se guarda cifrado con Diana\Core\Cifrado — la
+-- clave vive solo en config/config.php, nunca en la base de datos.
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 1. Datos fiscales y Certificado de Sello Digital (CSD) para timbrar CFDI.
+-- ---------------------------------------------------------------------
+CREATE TABLE colegio_fiscal (
+    colegio_id        INT UNSIGNED PRIMARY KEY,
+    razon_social      VARCHAR(254) NULL,
+    rfc               VARCHAR(13)  NULL,
+    regimen_fiscal    CHAR(3)      NULL,             -- c_RegimenFiscal (ver Catalogos::REGIMEN_FISCAL)
+    calle             VARCHAR(150) NULL,
+    numero_ext        VARCHAR(20)  NULL,
+    numero_int        VARCHAR(20)  NULL,
+    colonia           VARCHAR(100) NULL,
+    municipio         VARCHAR(100) NULL,
+    estado            VARCHAR(60)  NULL,
+    codigo_postal     CHAR(5)      NULL,
+    csd_cer_archivo   VARCHAR(255) NULL,              -- ruta relativa en storage/uploads (contenido cifrado)
+    csd_key_archivo   VARCHAR(255) NULL,              -- ruta relativa en storage/uploads (contenido cifrado)
+    csd_key_password  VARCHAR(255) NULL,              -- cifrada; nunca se muestra de vuelta
+    csd_numero_serie  VARCHAR(40)  NULL,               -- extraído del certificado al cargarlo
+    csd_titular       VARCHAR(150) NULL,
+    csd_vigente_desde DATE NULL,
+    csd_vigente_hasta DATE NULL,
+    actualizado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cfis_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- 2. Correo saliente (SMTP) para notificaciones y confirmaciones.
+-- ---------------------------------------------------------------------
+CREATE TABLE colegio_correo (
+    colegio_id        INT UNSIGNED PRIMARY KEY,
+    smtp_host         VARCHAR(150) NULL,
+    smtp_puerto       SMALLINT UNSIGNED NULL DEFAULT 587,
+    smtp_seguridad    ENUM('ninguna','tls','ssl') NOT NULL DEFAULT 'tls',
+    smtp_usuario      VARCHAR(150) NULL,
+    smtp_password     VARCHAR(255) NULL,              -- cifrada
+    remitente_nombre  VARCHAR(150) NULL,
+    remitente_email   VARCHAR(120) NULL,
+    actualizado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ccor_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- 3. Proveedor Autorizado de Certificación (PAC) para timbrado de CFDI.
+-- ---------------------------------------------------------------------
+CREATE TABLE colegio_pac (
+    colegio_id      INT UNSIGNED PRIMARY KEY,
+    proveedor       VARCHAR(30)  NOT NULL DEFAULT 'timbox',  -- ver Catalogos::PAC_PROVEEDORES
+    modo            ENUM('pruebas','produccion') NOT NULL DEFAULT 'pruebas',
+    usuario         VARCHAR(150) NULL,
+    password        VARCHAR(255) NULL,                -- cifrada
+    api_key         VARCHAR(255) NULL,                -- cifrada
+    url_servicio    VARCHAR(255) NULL,                -- para proveedor "otro", o para sobreescribir la URL por defecto
+    actualizado_en  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cpac_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- 4. Plantilla de constancia. Por ahora una sola, general para todo el
+-- colegio; una plantilla distinta por evento queda para más adelante.
+-- ---------------------------------------------------------------------
+CREATE TABLE colegio_constancia (
+    colegio_id      INT UNSIGNED PRIMARY KEY,
+    titulo          VARCHAR(150) NOT NULL DEFAULT 'Constancia de participación',
+    cuerpo          TEXT NULL,                         -- admite {socio}, {evento}, {fecha_inicio}, {fecha_fin}, {puntos_dpc}, {colegio}
+    orientacion     ENUM('horizontal','vertical') NOT NULL DEFAULT 'horizontal',
+    imagen          VARCHAR(255) NULL,                 -- logo o firma opcional, ruta relativa en storage/uploads
+    actualizado_en  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ccon_colegio FOREIGN KEY (colegio_id) REFERENCES colegios(id)
+) ENGINE=InnoDB;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
@@ -405,3 +483,11 @@ CROSS JOIN (
     SELECT 11, 'Docencia y educación' UNION ALL
     SELECT 12, 'Otras disciplinas'
 ) x;
+
+-- Plantilla de constancia por defecto para cada colegio (editable después
+-- desde Configuración → Constancia).
+INSERT INTO colegio_constancia (colegio_id, titulo, cuerpo, orientacion)
+SELECT id, 'Constancia de participación',
+       'Por medio de la presente, {colegio} otorga la presente constancia a {socio} por su participación en {evento}, celebrado el {fecha_inicio}, con una duración equivalente a {puntos_dpc} puntos de Desarrollo Profesional Continuo (DPC).',
+       'horizontal'
+FROM colegios;

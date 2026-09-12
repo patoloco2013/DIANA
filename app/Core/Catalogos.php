@@ -91,6 +91,19 @@ final class Catalogos
         'otro'            => 'Otro',
     ];
 
+    /** Proveedores Autorizados de Certificación (PAC) para timbrado de CFDI. */
+    public const PAC_PROVEEDORES = [
+        'timbox' => 'Timbox',
+        'otro'   => 'Otro (URL personalizada)',
+    ];
+
+    /** Seguridad de la conexión SMTP saliente. */
+    public const SMTP_SEGURIDAD = [
+        'tls'     => 'TLS (recomendado, puerto 587)',
+        'ssl'     => 'SSL (puerto 465)',
+        'ninguna' => 'Sin cifrado',
+    ];
+
     /** Tipos de archivo adjunto para eventos (distintos de la galería de imágenes). */
     public const TIPOS_DOCUMENTO_EVENTO = [
         'convocatoria'       => 'Convocatoria',

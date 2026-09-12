@@ -21,8 +21,9 @@ $menu = [
         'reportes'  => ['Reportes', 'bi-bar-chart-line',   'reportes'],
     ],
     'Administración' => [
-        'usuarios'  => ['Usuarios', 'bi-person-gear',      'usuarios'],
-        'colegios'  => ['Colegios', 'bi-buildings',        'colegios'],
+        'usuarios'      => ['Usuarios',      'bi-person-gear', 'usuarios'],
+        'colegios'      => ['Colegios',      'bi-buildings',   'colegios'],
+        'configuracion' => ['Configuración', 'bi-gear',        'configuracion'],
     ],
 ];
 

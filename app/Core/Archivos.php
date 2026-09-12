@@ -117,6 +117,66 @@ final class Archivos
         }
     }
 
+    /**
+     * Como guardar(), pero para material sensible (la llave privada del
+     * sello digital, por ejemplo): no se valida el contenido por MIME —
+     * estos archivos son binarios sin un tipo reconocible por finfo, así que
+     * quien llama debe validarlo por su cuenta (abriéndolo con OpenSSL,
+     * típicamente) antes o después de guardarlo. El contenido se cifra con
+     * Cifrado::cifrar() antes de escribirse a disco: ni con acceso directo al
+     * servidor de archivos queda expuesto el secreto sin también tener la
+     * clave de cifrado de la aplicación (que vive solo en config/config.php).
+     * Devuelve además 'contenido' con los bytes originales, para validarlos
+     * de inmediato sin tener que releer y descifrar lo que se acaba de guardar.
+     */
+    public static function guardarCifrado(array $archivo, string $subcarpeta, array $extensiones): array
+    {
+        $error = (int) ($archivo['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+            throw new RuntimeException('El archivo excede el tamaño permitido por el servidor.');
+        }
+        if ($error !== UPLOAD_ERR_OK || !is_uploaded_file($archivo['tmp_name'] ?? '')) {
+            throw new RuntimeException('No se recibió el archivo correctamente.');
+        }
+        if ((int) $archivo['size'] > self::maxBytes()) {
+            throw new RuntimeException('El archivo excede el máximo de ' . cfg('archivos.max_mb', 10) . ' MB.');
+        }
+
+        $original = (string) ($archivo['name'] ?? 'archivo');
+        $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+        if (!in_array($ext, $extensiones, true)) {
+            throw new RuntimeException('Extensión no permitida. Use: ' . strtoupper(implode(', ', $extensiones)) . '.');
+        }
+
+        $contenido = file_get_contents($archivo['tmp_name']);
+        if ($contenido === false || $contenido === '') {
+            throw new RuntimeException('No fue posible leer el archivo subido.');
+        }
+
+        $subcarpeta = trim(preg_replace('#[^a-zA-Z0-9/_-]#', '', $subcarpeta), '/');
+        $directorio = self::rutaBase() . '/' . $subcarpeta;
+        self::asegurarDirectorio($directorio);
+
+        $nombre   = bin2hex(random_bytes(16)) . '.enc';
+        $relativo = $subcarpeta . '/' . $nombre;
+        if (file_put_contents($directorio . '/' . $nombre, Cifrado::cifrar($contenido)) === false) {
+            throw new RuntimeException('No fue posible guardar el archivo en el servidor.');
+        }
+
+        return ['archivo' => $relativo, 'contenido' => $contenido];
+    }
+
+    /** Lee y descifra un archivo guardado con guardarCifrado(). Null si no existe o es ilegible. */
+    public static function leerCifrado(?string $relativo): ?string
+    {
+        $ruta = self::rutaAbsoluta($relativo);
+        if ($ruta === null || !is_file($ruta)) {
+            return null;
+        }
+        $cifrado = file_get_contents($ruta);
+        return $cifrado === false ? null : Cifrado::descifrar($cifrado);
+    }
+
     /** Envía el archivo al navegador (inline para verlo, o como descarga). */
     public static function enviar(?string $relativo, string $mime, string $nombreDescarga, bool $inline = true): never
     {
