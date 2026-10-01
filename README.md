@@ -21,6 +21,11 @@ DIANA es la reescritura desde cero del sistema SIE (`admin.php` →
 | Usuarios | Staff con roles y permisos por módulo (RBAC) |
 | Colegios | Alta y configuración de cada colegio (solo superadmin) |
 
+## Documentación
+
+- [Manual de usuario](docs/MANUAL_USUARIO.md): uso de cada módulo para el personal del colegio.
+- [Puntos clave para continuar](docs/PUNTOS_CLAVE.md): convenciones, hallazgos de la revisión y hoja de ruta.
+
 ## Requisitos
 
 - PHP **8.2+** (probado con 8.5) con extensión `pdo_mysql`
