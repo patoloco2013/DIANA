@@ -20,6 +20,7 @@ DIANA es la reescritura desde cero del sistema SIE (`admin.php` →
 | Reportes | Saldos, morosidad, cobranza por periodo y resultados por evento |
 | Usuarios | Staff con roles y permisos por módulo (RBAC) |
 | Colegios | Alta y configuración de cada colegio (solo superadmin) |
+| SAT | Certificados del colegio (**CSD** y **e.firma**): se suben .cer, .key y contraseña; se valida que la llave abra y corresponda al certificado, se leen RFC, número y vigencia; uno activo por tipo, aviso de vencimiento, quitar con historial. El .key y la contraseña (cifrada) nunca se descargan |
 
 ## Documentación
 
@@ -103,6 +104,11 @@ protección depende de los `.htaccess` incluidos, que solo aplican con
    sesión no viaje en claro.
 4. Use un usuario de MySQL exclusivo de la aplicación, con permisos solo sobre
    su base de datos.
+5. Para la sección **SAT** configure `seguridad.clave_cifrado` (32 bytes en
+   base64: `php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"`). Cifra la
+   contraseña de las llaves privadas; respáldela fuera de la base de datos: si
+   se pierde o cambia habrá que volver a subir los certificados.
+
 ## Arquitectura
 
 ```

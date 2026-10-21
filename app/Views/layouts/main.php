@@ -23,6 +23,7 @@ $menu = [
     'Administración' => [
         'usuarios'  => ['Usuarios', 'bi-person-gear',      'usuarios'],
         'colegios'  => ['Colegios', 'bi-buildings',        'colegios'],
+        'sat'       => ['SAT',      'bi-shield-lock',      'sat'],
     ],
 ];
 

@@ -43,6 +43,13 @@ return [
         // Intentos de login fallidos permitidos antes de bloquear temporalmente
         'max_intentos_login'    => 5,
         'bloqueo_minutos'       => 15,
+
+        // Clave para cifrar secretos guardados en la BD (p. ej. la contraseña
+        // de la llave privada de los certificados del SAT). 32 bytes en base64:
+        //   php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"
+        // Guárdela con los respaldos: si se pierde o cambia, habrá que volver
+        // a subir los certificados.
+        'clave_cifrado'         => '',
     ],
 
     'archivos' => [

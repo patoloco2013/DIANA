@@ -22,10 +22,16 @@ final class Archivos
         'jpeg' => ['image/jpeg'],
         'png'  => ['image/png'],
         'webp' => ['image/webp'],
+        // Certificados del SAT: binarios DER (o PEM si fueron convertidos);
+        // su contenido real lo valida Certificado al leerlos con OpenSSL.
+        'cer'  => ['application/octet-stream', 'application/x-x509-ca-cert', 'application/pkix-cert', 'text/plain'],
+        'key'  => ['application/octet-stream', 'text/plain'],
     ];
 
     public const EXT_IMAGEN    = ['jpg', 'jpeg', 'png', 'webp'];
     public const EXT_DOCUMENTO = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+    public const EXT_CERTIFICADO = ['cer'];
+    public const EXT_LLAVE       = ['key'];
 
     public static function rutaBase(): string
     {

@@ -22,7 +22,8 @@ DPC y dos fases de registro).*
 | Cuentas (cargos, pagos, cancelación) | Funcional; sin aplicación de pagos a cargos. |
 | Reportes (saldos, morosidad, cobranza, eventos) | Básicos, solo pantalla/impresión. |
 | Usuarios y colegios | Funcional; roles solo editables por SQL. |
-| Facturación CFDI | **No iniciado** (los perfiles fiscales ya existen). |
+| SAT: certificados CSD / e.firma por colegio | Completo (subir con validación de llave y contraseña, activar, quitar, historial). |
+| Facturación CFDI | **No iniciado** (ya existen los perfiles fiscales y los certificados). |
 | Migración de datos del SIE | **No iniciado** (falta ETL). |
 | Correos (confirmaciones, cobranza, enlaces en línea) | **No iniciado**. |
 | Pruebas automatizadas / CI | **No existen**. `php -l` pasa en todos los archivos. |
@@ -48,6 +49,8 @@ app/Core/
   Controller.php          Base: vista(), esPost(), post(), colegioId(), usuarioId()
   View.php                render() con layout / parcial() sin layout
   Archivos.php            Subidas seguras (lista blanca + finfo + nombre aleatorio)
+  Certificado.php         Lee .cer del SAT (RFC, número, vigencia, tipo) y valida .key + contraseña
+  Cifrado.php             AES-256-GCM con seguridad.clave_cifrado (contraseñas de llaves)
   Catalogos.php           Constantes: estados, tipos de socio, categorías, SAT…
 app/Controllers/          Uno por módulo (MODULO = clave RBAC)
 app/Views/<modulo>/       Vistas; los parciales empiezan con "_"
@@ -68,6 +71,7 @@ storage/uploads/          Fotos, documentos e imágenes (gitignored, fuera de pu
 | `reportes` | ReportesController | lectura |
 | `usuarios` | UsuariosController | usuarios, roles |
 | `colegios` | ColegiosController | colegios (+ siembra disciplinas) |
+| `sat` | SatController | sat_certificados (archivos en `storage/uploads/sat/{colegio}/`) |
 | *(público)* | AuthController | usuarios, login_intentos |
 
 ---
@@ -177,7 +181,10 @@ storage/uploads/          Fotos, documentos e imágenes (gitignored, fuera de pu
 ### Fase 3 — Facturación y autoservicio
 - [ ] Módulo **Facturación CFDI 4.0** con PAC (a definir): timbrado desde un
       pago o cargo, usando el perfil fiscal predeterminado del socio;
-      cancelación y complemento de pagos.
+      cancelación y complemento de pagos. Para sellar: el CSD activo del
+      colegio (`sat_certificados` con `tipo = 'csd' AND activo = 1 AND
+      eliminado_en IS NULL`), su .key con `Archivos::rutaBase()` y la
+      contraseña con `Cifrado::descifrar(password_cifrada)`.
 - [ ] Administración de **roles y permisos** desde la UI (M3).
 - [ ] Exportación a Excel/CSV de todos los reportes; paginación (B2, B7).
 - [ ] **Portal del socio** (opcional): consulta de estado de cuenta, puntos
