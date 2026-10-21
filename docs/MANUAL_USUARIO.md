@@ -21,9 +21,10 @@ en DIANA y cómo hacerlo.
 10. [Reportes](#10-reportes)
 11. [Usuarios](#11-usuarios)
 12. [Colegios](#12-colegios)
-13. [Flujos de trabajo frecuentes](#13-flujos-de-trabajo-frecuentes)
-14. [Mensajes frecuentes y solución de problemas](#14-mensajes-frecuentes-y-solución-de-problemas)
-15. [Glosario](#15-glosario)
+13. [SAT (certificados)](#13-sat-certificados)
+14. [Flujos de trabajo frecuentes](#14-flujos-de-trabajo-frecuentes)
+15. [Mensajes frecuentes y solución de problemas](#15-mensajes-frecuentes-y-solución-de-problemas)
+16. [Glosario](#16-glosario)
 
 ---
 
@@ -98,7 +99,7 @@ su rol permite**:
 | --- | --- |
 | **Operación** | Inicio, Socios, Eventos, Registro, Cuentas |
 | **Análisis** | Reportes |
-| **Administración** | Usuarios, Colegios |
+| **Administración** | Usuarios, Colegios, SAT |
 
 - **Selector "Colegio activo"** (solo superadministradores): lista desplegable
   en la parte superior del menú. Al elegir otro colegio, todo el sistema cambia
@@ -488,7 +489,7 @@ Alta y mantenimiento del personal que usa DIANA.
 
 | Rol | Módulos permitidos |
 | --- | --- |
-| **Administrador** | Todos. |
+| **Administrador** | Todos (incluye SAT). |
 | **Operador** | Inicio, Socios, Eventos (incluye Disciplinas), Registro y Cuentas. |
 | **Consulta** | Inicio y Reportes (solo lectura). |
 
@@ -542,7 +543,79 @@ Solo para el **superadministrador** (usuario sin colegio asignado).
 
 ---
 
-## 13. Flujos de trabajo frecuentes
+## 13. SAT (certificados)
+
+Certificados del colegio que se usarán para la facturación electrónica. Está
+en **Administración → SAT** y solo lo ven los roles con el módulo *SAT*
+(por omisión, **Administrador**). Cada colegio tiene sus propios
+certificados; el superadministrador trabaja con los del **colegio activo**.
+
+Se manejan dos tipos, que el sistema **detecta solo** al leer el archivo:
+
+| Tipo | Para qué sirve |
+| --- | --- |
+| **CSD (sello digital)** | Sellar las facturas (CFDI). Es el que se necesita para facturar. |
+| **e.firma (FIEL)** | Firma electrónica avanzada del colegio. |
+
+### 13.1 Subir un certificado
+
+Necesita los tres datos que entrega el SAT al tramitar el certificado:
+
+1. **Certificado (.cer)**.
+2. **Llave privada (.key)**.
+3. **Contraseña de la llave privada**.
+
+Seleccione los archivos, capture la contraseña y pulse **Subir y validar**.
+Antes de guardar, el sistema comprueba que:
+
+- el .cer sea un certificado válido con RFC;
+- la contraseña abra el .key;
+- el .key corresponda a ese .cer;
+- el certificado no esté vencido y no esté ya dado de alta.
+
+Si todo es correcto, muestra el tipo, el número de certificado y el RFC
+leídos del archivo (no hay que capturarlos).
+
+- **Usar como certificado activo** (marcado por omisión): el nuevo pasa a ser
+  el que se usará; el anterior del mismo tipo queda guardado pero inactivo.
+  El primer certificado de cada tipo siempre queda activo.
+- Por seguridad, el **.key y la contraseña nunca se pueden descargar ni ver**
+  de nuevo; la contraseña se guarda cifrada.
+
+### 13.2 Listado
+
+Muestra tipo (con la etiqueta **Activo** en el que está en uso), RFC y
+titular, número de certificado y vigencia, con una etiqueta:
+
+| Etiqueta | Significado |
+| --- | --- |
+| **Vigente** | Más de 30 días para vencer. |
+| **Vence en N días** | Faltan 30 días o menos: tramite y suba el nuevo a tiempo. |
+| **Vencido** | Ya no sirve; no se puede activar. Quítelo. |
+
+Si no hay un CSD activo, aparece el aviso *"No hay un CSD activo: sin él no se
+podrán emitir facturas."*
+
+### 13.3 Acciones
+
+- ⬇ **Descargar .cer**: descarga el certificado público (útil para enviarlo
+  a quien lo solicite).
+- ✔ **Usar como activo**: convierte un certificado inactivo y vigente en el
+  activo de su tipo.
+- 🗑 **Quitar**: borra del servidor el .cer, el .key y la contraseña. **No se
+  puede deshacer.** El registro queda en el **Historial de certificados
+  quitados** (quién y cuándo). Si quitó el activo, active otro o suba uno
+  nuevo.
+
+### 13.4 Renovar un certificado
+
+1. Tramite el nuevo CSD en el portal del SAT (con la e.firma).
+2. Súbalo aquí con **Usar como certificado activo** marcado.
+3. Cuando el anterior venza (o si ya no lo necesita), **quítelo**.
+
+---
+
+## 14. Flujos de trabajo frecuentes
 
 ### Organizar un evento de principio a fin
 
@@ -574,7 +647,7 @@ Solo para el **superadministrador** (usuario sin colegio asignado).
 
 ---
 
-## 14. Mensajes frecuentes y solución de problemas
+## 15. Mensajes frecuentes y solución de problemas
 
 | Mensaje / situación | Causa y solución |
 | --- | --- |
@@ -593,13 +666,20 @@ Solo para el **superadministrador** (usuario sin colegio asignado).
 | *El contenido del archivo no corresponde a su extensión.* | El archivo está dañado o fue renombrado (p. ej. un .docx renombrado a .pdf). Expórtelo de nuevo en el formato correcto. |
 | El evento no aparece en Registro | Su estatus no es *Publicado*. |
 | A un asistente le salieron 0 puntos | Se le dio asistencia antes de capturar los puntos DPC. Retire y vuelva a dar asistencia. |
+| *No se pudo abrir el archivo .key: la contraseña es incorrecta…* | Revise la contraseña de la **llave privada** (no es la contraseña del portal del SAT ni la de DIANA). |
+| *El archivo .key no corresponde a este certificado .cer.* | Los archivos son de certificados distintos (p. ej. el .key de la e.firma con el .cer del CSD). Use la pareja correcta. |
+| *El archivo .cer no es un certificado válido.* | Se seleccionó otro archivo (p. ej. el .key en el campo del .cer). |
+| *El certificado venció el…* | Tramite un certificado nuevo en el SAT. |
+| *Falta configurar la clave de cifrado* (sección SAT) | El administrador del servidor debe configurar `seguridad.clave_cifrado` (ver README). |
 
 ---
 
-## 15. Glosario
+## 16. Glosario
 
 - **CFDI**: Comprobante Fiscal Digital por Internet (factura electrónica del SAT).
+- **CSD**: Certificado de Sello Digital del SAT; se usa para sellar facturas.
 - **CSF**: Constancia de Situación Fiscal emitida por el SAT.
+- **e.firma (FIEL)**: firma electrónica avanzada emitida por el SAT.
 - **DPC**: Desarrollo Profesional Continuo; puntos que acreditan la
   actualización del profesionista.
 - **Disciplina**: área de conocimiento en la que se acreditan los puntos DPC.
